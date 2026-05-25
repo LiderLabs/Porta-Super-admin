@@ -1,15 +1,15 @@
-﻿import React from "react";
+import React from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/api";
 import { useUser, useClerk } from "@clerk/clerk-react";
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Theme = "dark" | "light";
 type Tab = "overview" | "accounts" | "plans" | "features" | "audit" | "settings";
 type Plan = "free" | "pro" | "enterprise" | "custom";
 type OrgStatus = "active" | "trial" | "blocked" | "suspended";
 
-// â”€â”€â”€ Theme tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Theme tokens ─────────────────────────────────────────────────────────────
 const T: Record<Theme, Record<string, string>> = {
   dark: {
     bg: "#080a0f", surface: "#0d1117", surfaceEl: "#161b22",
@@ -27,7 +27,7 @@ const T: Record<Theme, Record<string, string>> = {
   },
 };
 
-// â”€â”€â”€ Feature definitions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Feature definitions ──────────────────────────────────────────────────────
 const FEATURES = [
   { key: "checkInEnabled",          label: "Check-in",        desc: "Visitor check-in flow" },
   { key: "badgesEnabled",           label: "Badges",          desc: "Visitor badge printing" },
@@ -57,7 +57,7 @@ const DEFAULT_PLANS = [
   { id:"custom",     name:"Custom",     desc:"Tailored pricing and feature set",       price:0,   annualPrice:0,   maxUsers:999, maxLocations:99, color:"#bc8cff", features:DEFAULT_FEATURES_BY_PLAN.custom },
 ];
 
-// â”€â”€â”€ Icons (inline SVG) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Icons (inline SVG) ───────────────────────────────────────────────────────
 const Ico = (d: string, vb = "0 0 24 24") => () =>
   <svg width="15" height="15" viewBox={vb} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
 
@@ -82,7 +82,7 @@ const IcoShield    = Ico("M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z");
 const IcoArrowBack = Ico("M19 12H5M12 19l-7-7 7-7");
 const IcoId        = Ico("M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM7 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM13 10h5M13 14h3");
 
-// â”€â”€â”€ useTheme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── useTheme ─────────────────────────────────────────────────────────────────
 function useTheme() {
   const [theme, setTheme] = React.useState<Theme>(() => {
     try { return (localStorage.getItem("porta-sa-theme") as Theme) || "dark"; } catch { return "dark"; }
@@ -95,7 +95,7 @@ function useTheme() {
   return { theme, toggle, c: T[theme] };
 }
 
-// â”€â”€â”€ Shared UI components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Shared UI components ─────────────────────────────────────────────────────
 function Toggle({ on, onChange, c }: { on: boolean; onChange: () => void; c: Record<string,string> }) {
   return (
     <button onClick={onChange} role="switch" aria-checked={on} style={{ width:36,height:20,borderRadius:10,border:"none",background:on?c.accent:c.border,position:"relative",cursor:"pointer",transition:"background .2s",flexShrink:0 }}>
@@ -210,7 +210,7 @@ function FeatureRow({ org, onSave, c }: { org:any; onSave:(f:any)=>Promise<void>
   );
 }
 
-// â”€â”€â”€ BookingRules toggle row (for create/edit modals) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── BookingRules toggle row (for create/edit modals) ─────────────────────────
 function BookingRuleRow({ label, desc, on, onChange, c }: { label:string; desc:string; on:boolean; onChange:()=>void; c:Record<string,string> }) {
   return (
     <div onClick={onChange} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderRadius:8,border:"1px solid "+(on?c.accentDim:c.border),background:on?c.accentBg:c.surfaceEl,cursor:"pointer",marginBottom:8,transition:"all .15s" }}>
@@ -223,7 +223,7 @@ function BookingRuleRow({ label, desc, on, onChange, c }: { label:string; desc:s
   );
 }
 
-// â”€â”€â”€ Main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main page ────────────────────────────────────────────────────────────────
 export function SuperAdminPage() {
   const { user } = useUser();
   const savedPlans   = useQuery(api.superadmin.listPlanDefinitions);
@@ -355,7 +355,7 @@ export function SuperAdminPage() {
   return (
     <div style={{ display:"flex",height:"100vh",fontFamily:"'DM Sans','Inter',system-ui,sans-serif",background:c.bg,color:c.text }}>
 
-      {/* â”€â”€ SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── SIDEBAR ────────────────────────────────────────────────────── */}
       <aside style={{ width:232,flexShrink:0,background:c.surface,borderRight:"1px solid "+c.border,display:"flex",flexDirection:"column",height:"100vh",position:"sticky",top:0 }}>
         <div style={{ padding:"20px 18px 16px",borderBottom:"1px solid "+c.border,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10 }}>
@@ -401,7 +401,7 @@ export function SuperAdminPage() {
         </div>
       </aside>
 
-      {/* â”€â”€ MAIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── MAIN ───────────────────────────────────────────────────────── */}
       <main style={{ flex:1,overflow:"auto",minWidth:0,background:c.bg }}>
 
         {/* OVERVIEW */}
@@ -472,7 +472,7 @@ export function SuperAdminPage() {
                 {audit.slice(0,6).map((a:any) => (
                   <div key={a._id} style={{ display:"flex",alignItems:"center",gap:14,padding:"11px 22px",borderBottom:"1px solid "+c.surfaceEl }}>
                     <span style={{ background:c.accentBg,color:c.accent,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:6,fontFamily:"monospace",flexShrink:0 }}>{a.action}</span>
-                    <span style={{ fontSize:13,color:c.text,flex:1 }}>{a.targetLabel||a.targetId||"â€”"}</span>
+                    <span style={{ fontSize:13,color:c.text,flex:1 }}>{a.targetLabel||a.targetId||"—"}</span>
                     <span style={{ fontSize:12,color:c.textSub,flexShrink:0 }}>{a.actorName}</span>
                     <span style={{ fontSize:11,color:c.textMute,flexShrink:0,fontFamily:"monospace" }}>{new Date(a.createdAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
                   </div>
@@ -556,11 +556,11 @@ export function SuperAdminPage() {
                           </span>
                         </td>
                         <td style={{ padding:"13px 14px" }}>
-                          <div style={{ fontSize:13,fontWeight:500,color:c.text }}>{o.ownerName||"â€”"}</div>
+                          <div style={{ fontSize:13,fontWeight:500,color:c.text }}>{o.ownerName||"—"}</div>
                           <div style={{ fontSize:11,color:c.textMute }}>{o.ownerEmail}</div>
                           {o.ownerPhone && <div style={{ fontSize:11,color:c.textMute }}>{o.ownerPhone}</div>}
                         </td>
-                        <td style={{ padding:"13px 14px",fontSize:13,color:c.textSub }}>{o.maxUsers||"â€”"}</td>
+                        <td style={{ padding:"13px 14px",fontSize:13,color:c.textSub }}>{o.maxUsers||"—"}</td>
                         <td style={{ padding:"13px 14px",textAlign:"center" as const }}>
                           <span style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:20,fontSize:11,fontWeight:600,background:o.bookingRules?.idRequired?c.accentBg:c.surfaceEl,color:o.bookingRules?.idRequired?c.accent:c.textMute,border:"1px solid "+(o.bookingRules?.idRequired?c.accentDim:c.border) }}>
                             <IcoId/>{o.bookingRules?.idRequired?"Yes":"No"}
@@ -630,17 +630,17 @@ export function SuperAdminPage() {
                     <div style={{ display:"flex",gap:8,marginBottom:14 }}>
                       <div style={{ flex:1,background:c.surfaceEl,borderRadius:8,padding:"8px 10px" }}>
                         <div style={{ fontSize:9,color:c.textMute,fontWeight:700 }}>MAX USERS</div>
-                        <div style={{ fontSize:16,fontWeight:700,color:c.text }}>{plan.maxUsers>=999?"âˆž":plan.maxUsers}</div>
+                        <div style={{ fontSize:16,fontWeight:700,color:c.text }}>{plan.maxUsers>=999?"∞":plan.maxUsers}</div>
                       </div>
                       <div style={{ flex:1,background:c.surfaceEl,borderRadius:8,padding:"8px 10px" }}>
                         <div style={{ fontSize:9,color:c.textMute,fontWeight:700 }}>LOCATIONS</div>
-                        <div style={{ fontSize:16,fontWeight:700,color:c.text }}>{plan.maxLocations>=99?"âˆž":plan.maxLocations}</div>
+                        <div style={{ fontSize:16,fontWeight:700,color:c.text }}>{plan.maxLocations>=99?"∞":plan.maxLocations}</div>
                       </div>
                     </div>
                     <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
                       {FEATURES.filter(f => (plan.features as any)?.[f.key]).map(f => (
                         <div key={f.key} style={{ display:"flex",alignItems:"center",gap:6,fontSize:11,color:c.textSub }}>
-                          <span style={{ color:c.accent,fontWeight:700 }}>âœ“</span>{f.label}
+                          <span style={{ color:c.accent,fontWeight:700 }}>✓</span>{f.label}
                         </div>
                       ))}
                     </div>
@@ -670,8 +670,8 @@ export function SuperAdminPage() {
                         {planDefs.map(pp => (
                           <td key={pp.id} style={{ padding:"10px 14px",textAlign:"center" as const }}>
                             {(pp.features as any)?.[f.key]
-                              ? <span style={{ color:c.accent,fontWeight:700,fontSize:16 }}>âœ“</span>
-                              : <span style={{ color:c.border,fontSize:16 }}>â€”</span>
+                              ? <span style={{ color:c.accent,fontWeight:700,fontSize:16 }}>✓</span>
+                              : <span style={{ color:c.border,fontSize:16 }}>—</span>
                             }
                           </td>
                         ))}
@@ -733,8 +733,8 @@ export function SuperAdminPage() {
                         <td style={{ padding:"12px 14px" }}>
                           <span style={{ background:c.accentBg,color:c.accent,fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,fontFamily:"monospace" }}>{a.action}</span>
                         </td>
-                        <td style={{ padding:"12px 14px",fontSize:13,fontWeight:500,color:c.text }}>{a.targetLabel||a.targetId||"â€”"}</td>
-                        <td style={{ padding:"12px 14px",fontSize:12,color:c.textSub,maxWidth:240 }}>{a.detail||"â€”"}</td>
+                        <td style={{ padding:"12px 14px",fontSize:13,fontWeight:500,color:c.text }}>{a.targetLabel||a.targetId||"—"}</td>
+                        <td style={{ padding:"12px 14px",fontSize:12,color:c.textSub,maxWidth:240 }}>{a.detail||"—"}</td>
                         <td style={{ padding:"12px 14px",fontSize:13,color:c.text }}>{a.actorName}</td>
                         <td style={{ padding:"12px 14px",fontSize:11,color:c.textMute,fontFamily:"monospace",whiteSpace:"nowrap" }}>
                           {new Date(a.createdAt).toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
@@ -799,7 +799,7 @@ export function SuperAdminPage() {
 
       </main>
 
-      {/* â”€â”€ CREATE MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── CREATE MODAL ───────────────────────────────────────────────── */}
       {createOpen && (
         <Modal title="Create new account" onClose={()=>setCreateOpen(false)} c={c} wide>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
@@ -818,9 +818,9 @@ export function SuperAdminPage() {
             <div style={{ gridColumn:"1/-1" }}>
               <Field label="Admin notes" c={c}><textarea value={form.adminNotes} onChange={e=>setForm(f=>({...f,adminNotes:e.target.value}))} placeholder="Internal notes..." style={{ ...inp(c),minHeight:70,resize:"vertical" }}/></Field>
             </div>
-            {/* â”€â”€ Booking rules section â”€â”€ */}
+            {/* ── Appointment rules section ── */}
             <div style={{ gridColumn:"1/-1",marginTop:4 }}>
-              <div style={{ fontSize:11,fontWeight:700,color:c.textMute,textTransform:"uppercase" as const,letterSpacing:"0.1em",marginBottom:10 }}>Booking rules</div>
+              <div style={{ fontSize:11,fontWeight:700,color:c.textMute,textTransform:"uppercase" as const,letterSpacing:"0.1em",marginBottom:10 }}>Appointment rules</div>
               <BookingRuleRow label="Require visitor ID" desc="Visitors must present a valid ID at check-in" on={form.bookingRules.idRequired} onChange={()=>setForm(f=>({...f,bookingRules:{...f.bookingRules,idRequired:!f.bookingRules.idRequired}}))} c={c}/>
               <BookingRuleRow label="Require photo" desc="Capture a photo of the visitor at check-in" on={form.bookingRules.photoRequired} onChange={()=>setForm(f=>({...f,bookingRules:{...f.bookingRules,photoRequired:!f.bookingRules.photoRequired}}))} c={c}/>
               <BookingRuleRow label="Approval required" desc="Visits must be approved before the visitor can check in" on={form.bookingRules.approvalRequired} onChange={()=>setForm(f=>({...f,bookingRules:{...f.bookingRules,approvalRequired:!f.bookingRules.approvalRequired}}))} c={c}/>
@@ -841,9 +841,9 @@ export function SuperAdminPage() {
         </Modal>
       )}
 
-      {/* â”€â”€ EDIT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── EDIT MODAL ─────────────────────────────────────────────────── */}
       {editOrg && (
-        <Modal title={"Edit â€” "+editOrg.name} onClose={()=>setEditOrg(null)} c={c} wide>
+        <Modal title={"Edit — "+editOrg.name} onClose={()=>setEditOrg(null)} c={c} wide>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
             <div style={{ gridColumn:"1/-1" }}><Field label="Logo" c={c}><LogoUploader current={editForm.logoUrl} onUpload={url=>setEditForm((f:any)=>({...f,logoUrl:url}))} c={c}/></Field></div>
             <Field label="Organisation name" required c={c}><input value={editForm.name} onChange={e=>setEditForm((f:any)=>({...f,name:e.target.value}))} style={inp(c)}/></Field>
@@ -859,9 +859,9 @@ export function SuperAdminPage() {
             <div style={{ gridColumn:"1/-1" }}>
               <Field label="Admin notes" c={c}><textarea value={editForm.adminNotes} onChange={e=>setEditForm((f:any)=>({...f,adminNotes:e.target.value}))} style={{ ...inp(c),minHeight:70,resize:"vertical" }}/></Field>
             </div>
-            {/* â”€â”€ Booking rules section â”€â”€ */}
+            {/* ── Appointment rules section ── */}
             <div style={{ gridColumn:"1/-1",marginTop:4 }}>
-              <div style={{ fontSize:11,fontWeight:700,color:c.textMute,textTransform:"uppercase" as const,letterSpacing:"0.1em",marginBottom:10 }}>Booking rules</div>
+              <div style={{ fontSize:11,fontWeight:700,color:c.textMute,textTransform:"uppercase" as const,letterSpacing:"0.1em",marginBottom:10 }}>Appointment rules</div>
               <BookingRuleRow label="Require visitor ID" desc="Visitors must present a valid ID at check-in" on={editForm.bookingRules?.idRequired??false} onChange={()=>setEditForm((f:any)=>({...f,bookingRules:{...f.bookingRules,idRequired:!f.bookingRules?.idRequired}}))} c={c}/>
               <BookingRuleRow label="Require photo" desc="Capture a photo of the visitor at check-in" on={editForm.bookingRules?.photoRequired??false} onChange={()=>setEditForm((f:any)=>({...f,bookingRules:{...f.bookingRules,photoRequired:!f.bookingRules?.photoRequired}}))} c={c}/>
               <BookingRuleRow label="Approval required" desc="Visits must be approved before the visitor can check in" on={editForm.bookingRules?.approvalRequired??true} onChange={()=>setEditForm((f:any)=>({...f,bookingRules:{...f.bookingRules,approvalRequired:!f.bookingRules?.approvalRequired}}))} c={c}/>
@@ -875,9 +875,9 @@ export function SuperAdminPage() {
         </Modal>
       )}
 
-      {/* â”€â”€ PLAN EDIT MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── PLAN EDIT MODAL ────────────────────────────────────────────── */}
       {planEditIdx!==null && planEditVal && (
-        <Modal title={planEditIdx<planDefs.length ? "Edit plan â€” "+(planDefs[planEditIdx]?.name??"") : "New plan"} onClose={()=>{setPlanEditIdx(null);setPlanEditVal(null);}} c={c} wide>
+        <Modal title={planEditIdx<planDefs.length ? "Edit plan — "+(planDefs[planEditIdx]?.name??"") : "New plan"} onClose={()=>{setPlanEditIdx(null);setPlanEditVal(null);}} c={c} wide>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
             <div style={{ gridColumn:"1/-1" }}><Field label="Plan name" required c={c}><input value={planEditVal.name} onChange={e=>setPlanEditVal((p:any)=>({...p,name:e.target.value}))} style={inp(c)}/></Field></div>
             <div style={{ gridColumn:"1/-1" }}><Field label="Description" c={c}><input value={planEditVal.desc} onChange={e=>setPlanEditVal((p:any)=>({...p,desc:e.target.value}))} style={inp(c)}/></Field></div>
@@ -920,7 +920,7 @@ export function SuperAdminPage() {
         </Modal>
       )}
 
-      {/* â”€â”€ BLOCK MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── BLOCK MODAL ────────────────────────────────────────────────── */}
       {blockModal && (
         <Modal title={blockModal.status==="blocked"?"Unblock organisation":"Block organisation"} onClose={()=>{setBlockModal(null);setBlockReason("");}} c={c}>
           <div style={{ fontSize:15,fontWeight:700,marginBottom:14,color:c.text }}>{blockModal.name}</div>
@@ -937,7 +937,7 @@ export function SuperAdminPage() {
         </Modal>
       )}
 
-      {/* â”€â”€ DELETE MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── DELETE MODAL ───────────────────────────────────────────────── */}
       {deleteConfirm && (
         <Modal title="Delete organisation" onClose={()=>setDeleteConfirm(null)} c={c}>
           <div style={{ fontSize:15,fontWeight:700,marginBottom:12,color:c.text }}>{deleteConfirm.name}</div>
