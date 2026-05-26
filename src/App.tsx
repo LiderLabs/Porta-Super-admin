@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import React, { useState } from "react";
-import { useUser, useClerk, useSignIn } from "@clerk/clerk-react";
+import { useUser, useClerk, useSignIn, SignOutButton } from "@clerk/clerk-react";
 import { SuperAdminPage } from "./features/superadmin/pages/SuperAdminPage";
 
 // ─── Login ────────────────────────────────────────────────────────────────────
@@ -141,6 +141,13 @@ function Guard({ children }: { children: React.ReactNode }) {
       <div style={{ fontSize:"20px",fontWeight:700,color:"#e6edf3" }}>Access Denied</div>
       <div style={{ fontSize:"14px",color:"#8b949e" }}>This area is restricted to Porta superadmins only.</div>
       <div style={{ fontSize:"12px",color:"#30363d",marginTop:"8px" }}>Signed in as: {user.primaryEmailAddress?.emailAddress}</div>
+      <SignOutButton>
+        <button style={{ marginTop:"8px",padding:"9px 20px",background:"transparent",border:"1px solid #30363d",borderRadius:"8px",color:"#8b949e",fontSize:"13px",fontWeight:600,cursor:"pointer",fontFamily:"DM Sans,sans-serif" }}
+          onMouseOver={e=>(e.currentTarget.style.borderColor="#f85149",e.currentTarget.style.color="#f85149")}
+          onMouseOut={e=>(e.currentTarget.style.borderColor="#30363d",e.currentTarget.style.color="#8b949e")}>
+          Sign out &amp; try another account
+        </button>
+      </SignOutButton>
     </div>
   );
 
