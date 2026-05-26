@@ -807,7 +807,7 @@ export function SuperAdminPage() {
             <Field label="Organisation name" required c={c}><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Acme Corp" style={inp(c)}/></Field>
             <Field label="URL handle" required c={c}><input value={form.slug} onChange={e=>setForm(f=>({...f,slug:e.target.value.toLowerCase().replace(/\s+/g,"-")}))} placeholder="acme-corp" style={inp(c)}/></Field>
             <Field label="Contact email" required c={c}><input value={form.ownerEmail} onChange={e=>setForm(f=>({...f,ownerEmail:e.target.value}))} placeholder="owner@acme.com" style={inp(c)}/></Field>
-            <Field label="Owner name" c={c}><input value={form.ownerName} onChange={e=>setForm(f=>({...f,ownerName:e.target.value}))} placeholder="Jane Smith" style={inp(c)}/></Field>
+            <Field label="Contact name" c={c}><input value={form.ownerName} onChange={e=>setForm(f=>({...f,ownerName:e.target.value}))} placeholder="Jane Smith" style={inp(c)}/></Field>
             <Field label="Contact phone" c={c}><input value={form.ownerPhone} onChange={e=>setForm(f=>({...f,ownerPhone:e.target.value}))} placeholder="+1 555 000 0000" style={inp(c)}/></Field>
             <Field label="Website" c={c}><input value={form.website} onChange={e=>setForm(f=>({...f,website:e.target.value}))} placeholder="https://acme.com" style={inp(c)}/></Field>
             <Field label="Address" c={c}><input value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} placeholder="123 Main St" style={inp(c)}/></Field>
@@ -849,7 +849,7 @@ export function SuperAdminPage() {
             <Field label="Organisation name" required c={c}><input value={editForm.name} onChange={e=>setEditForm((f:any)=>({...f,name:e.target.value}))} style={inp(c)}/></Field>
             <Field label="URL Handle" c={c}><input value={editForm.slug} onChange={e=>setEditForm((f:any)=>({...f,slug:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Contact email" c={c}><input value={editForm.ownerEmail} onChange={e=>setEditForm((f:any)=>({...f,ownerEmail:e.target.value}))} style={inp(c)}/></Field>
-            <Field label="Owner name" c={c}><input value={editForm.ownerName} onChange={e=>setEditForm((f:any)=>({...f,ownerName:e.target.value}))} style={inp(c)}/></Field>
+            <Field label="Contact name" c={c}><input value={editForm.ownerName} onChange={e=>setEditForm((f:any)=>({...f,ownerName:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Contact phone" c={c}><input value={editForm.ownerPhone} onChange={e=>setEditForm((f:any)=>({...f,ownerPhone:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Website" c={c}><input value={editForm.website} onChange={e=>setEditForm((f:any)=>({...f,website:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Address" c={c}><input value={editForm.address} onChange={e=>setEditForm((f:any)=>({...f,address:e.target.value}))} style={inp(c)}/></Field>
