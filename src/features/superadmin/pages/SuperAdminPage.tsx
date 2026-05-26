@@ -412,7 +412,7 @@ export function SuperAdminPage() {
             <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14 }}>
               <StatCard label="Total orgs"    value={stats?.totalOrgs??    "--"} sub="all time"           accent="#6366f1" c={c}/>
               <StatCard label="Active"         value={stats?.activeOrgs??   "--"} sub="currently live"     accent={c.accent} c={c}/>
-              <StatCard label="On trial"       value={stats?.trialOrgs??    "--"} sub="14-day window"      accent={c.info}   c={c}/>
+              <StatCard label="Trial accounts"       value={stats?.trialOrgs??    "--"} sub="14-day window"      accent={c.info}   c={c}/>
               <StatCard label="Blocked"        value={stats?.blockedOrgs??  "--"} sub="access suspended"   accent={c.danger} c={c}/>
             </div>
             <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:28 }}>
@@ -519,7 +519,7 @@ export function SuperAdminPage() {
               <table style={{ width:"100%",borderCollapse:"collapse" }}>
                 <thead>
                   <tr style={{ borderBottom:"1px solid "+c.border }}>
-                    {["Organisation","Plan","Status","Owner","Users","ID Required","Created","Actions"].map(h=>(
+                    {["Organisation","Plan","Status","Owner","User Limit","ID Required","Created","Actions"].map(h=>(
                       <th key={h} style={th}>{h}</th>
                     ))}
                   </tr>
@@ -806,12 +806,12 @@ export function SuperAdminPage() {
             <div style={{ gridColumn:"1/-1" }}><Field label="Organisation logo" c={c}><LogoUploader current={form.logoUrl} onUpload={url=>setForm(f=>({...f,logoUrl:url}))} c={c}/></Field></div>
             <Field label="Organisation name" required c={c}><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Acme Corp" style={inp(c)}/></Field>
             <Field label="URL handle" required c={c}><input value={form.slug} onChange={e=>setForm(f=>({...f,slug:e.target.value.toLowerCase().replace(/\s+/g,"-")}))} placeholder="acme-corp" style={inp(c)}/></Field>
-            <Field label="Owner email" required c={c}><input value={form.ownerEmail} onChange={e=>setForm(f=>({...f,ownerEmail:e.target.value}))} placeholder="owner@acme.com" style={inp(c)}/></Field>
+            <Field label="Contact email" required c={c}><input value={form.ownerEmail} onChange={e=>setForm(f=>({...f,ownerEmail:e.target.value}))} placeholder="owner@acme.com" style={inp(c)}/></Field>
             <Field label="Owner name" c={c}><input value={form.ownerName} onChange={e=>setForm(f=>({...f,ownerName:e.target.value}))} placeholder="Jane Smith" style={inp(c)}/></Field>
-            <Field label="Owner phone" c={c}><input value={form.ownerPhone} onChange={e=>setForm(f=>({...f,ownerPhone:e.target.value}))} placeholder="+1 555 000 0000" style={inp(c)}/></Field>
+            <Field label="Contact phone" c={c}><input value={form.ownerPhone} onChange={e=>setForm(f=>({...f,ownerPhone:e.target.value}))} placeholder="+1 555 000 0000" style={inp(c)}/></Field>
             <Field label="Website" c={c}><input value={form.website} onChange={e=>setForm(f=>({...f,website:e.target.value}))} placeholder="https://acme.com" style={inp(c)}/></Field>
             <Field label="Address" c={c}><input value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} placeholder="123 Main St" style={inp(c)}/></Field>
-            <Field label="Tax / VAT ID" c={c}><input value={form.taxId} onChange={e=>setForm(f=>({...f,taxId:e.target.value}))} placeholder="US123456789" style={inp(c)}/></Field>
+
             <Field label="Plan" c={c}><select value={form.plan} onChange={e=>setForm(f=>({...f,plan:e.target.value as Plan}))} style={{ ...inp(c),cursor:"pointer" }}>{planDefs.map(pp=><option key={pp.id} value={pp.id}>{pp.name}</option>)}</select></Field>
             <Field label="Max users" c={c}><input value={form.maxUsers} onChange={e=>setForm(f=>({...f,maxUsers:e.target.value}))} placeholder="50" style={inp(c)}/></Field>
             <Field label="Max locations" c={c}><input value={form.maxLocations} onChange={e=>setForm(f=>({...f,maxLocations:e.target.value}))} placeholder="5" style={inp(c)}/></Field>
@@ -847,13 +847,13 @@ export function SuperAdminPage() {
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
             <div style={{ gridColumn:"1/-1" }}><Field label="Logo" c={c}><LogoUploader current={editForm.logoUrl} onUpload={url=>setEditForm((f:any)=>({...f,logoUrl:url}))} c={c}/></Field></div>
             <Field label="Organisation name" required c={c}><input value={editForm.name} onChange={e=>setEditForm((f:any)=>({...f,name:e.target.value}))} style={inp(c)}/></Field>
-            <Field label="Slug" c={c}><input value={editForm.slug} onChange={e=>setEditForm((f:any)=>({...f,slug:e.target.value}))} style={inp(c)}/></Field>
-            <Field label="Owner email" c={c}><input value={editForm.ownerEmail} onChange={e=>setEditForm((f:any)=>({...f,ownerEmail:e.target.value}))} style={inp(c)}/></Field>
+            <Field label="URL Handle" c={c}><input value={editForm.slug} onChange={e=>setEditForm((f:any)=>({...f,slug:e.target.value}))} style={inp(c)}/></Field>
+            <Field label="Contact email" c={c}><input value={editForm.ownerEmail} onChange={e=>setEditForm((f:any)=>({...f,ownerEmail:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Owner name" c={c}><input value={editForm.ownerName} onChange={e=>setEditForm((f:any)=>({...f,ownerName:e.target.value}))} style={inp(c)}/></Field>
-            <Field label="Owner phone" c={c}><input value={editForm.ownerPhone} onChange={e=>setEditForm((f:any)=>({...f,ownerPhone:e.target.value}))} style={inp(c)}/></Field>
+            <Field label="Contact phone" c={c}><input value={editForm.ownerPhone} onChange={e=>setEditForm((f:any)=>({...f,ownerPhone:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Website" c={c}><input value={editForm.website} onChange={e=>setEditForm((f:any)=>({...f,website:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Address" c={c}><input value={editForm.address} onChange={e=>setEditForm((f:any)=>({...f,address:e.target.value}))} style={inp(c)}/></Field>
-            <Field label="Tax / VAT ID" c={c}><input value={editForm.taxId} onChange={e=>setEditForm((f:any)=>({...f,taxId:e.target.value}))} style={inp(c)}/></Field>
+            
             <Field label="Max users" c={c}><input value={editForm.maxUsers} onChange={e=>setEditForm((f:any)=>({...f,maxUsers:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Max locations" c={c}><input value={editForm.maxLocations} onChange={e=>setEditForm((f:any)=>({...f,maxLocations:e.target.value}))} style={inp(c)}/></Field>
             <div style={{ gridColumn:"1/-1" }}>
