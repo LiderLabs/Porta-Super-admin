@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/api";
 import { useUser, useClerk } from "@clerk/clerk-react";
@@ -210,7 +210,6 @@ function FeatureRow({ org, onSave, c }: { org:any; onSave:(f:any)=>Promise<void>
   );
 }
 
-// ─── BookingRules toggle row (for create/edit modals) ─────────────────────────
 function BookingRuleRow({ label, desc, on, onChange, c }: { label:string; desc:string; on:boolean; onChange:()=>void; c:Record<string,string> }) {
   return (
     <div onClick={onChange} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderRadius:8,border:"1px solid "+(on?c.accentDim:c.border),background:on?c.accentBg:c.surfaceEl,cursor:"pointer",marginBottom:8,transition:"all .15s" }}>
@@ -219,6 +218,286 @@ function BookingRuleRow({ label, desc, on, onChange, c }: { label:string; desc:s
         <div style={{ fontSize:11,color:c.textMute,marginTop:2 }}>{desc}</div>
       </div>
       <Toggle on={on} onChange={onChange} c={c}/>
+    </div>
+  );
+}
+
+// ─── Settings Panel ───────────────────────────────────────────────────────────
+function SettingsPanel({ user, c }: { user: any; c: Record<string,string> }) {
+  const ps           = useQuery(api.superadmin.getPlatformSettings);
+  const saveSettings = useMutation(api.superadmin.savePlatformSettings);
+  const clearAudit   = useMutation(api.superadmin.clearAuditLog);
+  const resetFlags   = useMutation(api.superadmin.resetAllFeatureFlags);
+
+  const [form, setForm]                   = React.useState<any>(null);
+  const [saving, setSaving]               = React.useState(false);
+  const [saved, setSaved]                 = React.useState(false);
+  const [dangerModal, setDangerModal]     = React.useState<"clear_audit"|"reset_flags"|null>(null);
+  const [dangerLoading, setDangerLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (ps && !form) setForm({ ...ps });
+  }, [ps]);
+
+  const set = (key: string, val: any) => setForm((f: any) => ({ ...f, [key]: val }));
+
+  const handleSave = async () => {
+    if (!form) return;
+    setSaving(true);
+    try {
+      await saveSettings({
+        trialDays:          form.trialDays,
+        selfServeSignups:   form.selfServeSignups,
+        defaultPlan:        form.defaultPlan,
+        requireEmailVerify: form.requireEmailVerify,
+        apiAccessTier:      form.apiAccessTier,
+        ssoEnforcement:     form.ssoEnforcement,
+        currency:           form.currency,
+        annualDiscount:     form.annualDiscount,
+        gracePeriodDays:    form.gracePeriodDays,
+        maintenanceMode:    form.maintenanceMode ?? false,
+        platformName:       form.platformName ?? "",
+        supportEmail:       form.supportEmail ?? "",
+        actorClerkId:       user?.id ?? "",
+        actorName:          user?.fullName ?? "Superadmin",
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally { setSaving(false); }
+  };
+
+  const handleDanger = async () => {
+    setDangerLoading(true);
+    try {
+      const actor = { actorClerkId: user?.id ?? "", actorName: user?.fullName ?? "Superadmin" };
+      if (dangerModal === "clear_audit") await clearAudit(actor);
+      if (dangerModal === "reset_flags") await resetFlags(actor);
+      setDangerModal(null);
+    } finally { setDangerLoading(false); }
+  };
+
+  const sinp = (w?: number): React.CSSProperties => ({
+    padding: "9px 12px",
+    background: c.surfaceEl,
+    border: "1px solid " + c.border,
+    borderRadius: 8,
+    color: c.text,
+    fontSize: 13,
+    outline: "none",
+    fontFamily: "inherit",
+    width: w ? w + "px" : "170px",
+    boxSizing: "border-box" as const,
+  });
+
+  const tog = (on: boolean, key: string) => (
+    <button
+      onClick={() => set(key, !on)}
+      style={{ width:42,height:24,borderRadius:12,background:on?c.accent:c.border,border:"none",cursor:"pointer",position:"relative",transition:"background 0.2s",flexShrink:0 }}
+    >
+      <span style={{ position:"absolute",top:3,left:on?21:3,width:18,height:18,borderRadius:9,background:"#fff",transition:"left 0.2s",display:"block" }}/>
+    </button>
+  );
+
+  const SettingRow = ({ label, desc, node, last }: { label:string; desc:string; node:React.ReactNode; last?:boolean }) => (
+    <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 20px",borderBottom:last?"none":"1px solid "+c.border,gap:16 }}>
+      <div>
+        <div style={{ fontSize:14,fontWeight:600,color:c.text }}>{label}</div>
+        <div style={{ fontSize:12,color:c.textSub,marginTop:2 }}>{desc}</div>
+      </div>
+      <div style={{ flexShrink:0 }}>{node}</div>
+    </div>
+  );
+
+  const SectionLabel = ({ label }: { label:string }) => (
+    <div style={{ fontSize:11,fontWeight:700,color:c.textMute,textTransform:"uppercase" as const,letterSpacing:"0.1em",marginBottom:10,marginTop:24 }}>{label}</div>
+  );
+
+  if (!form) return (
+    <div style={{ padding:40,color:c.textSub,fontSize:14 }}>Loading settings…</div>
+  );
+
+  return (
+    <div style={{ padding:"32px 36px",maxWidth:740 }}>
+      {/* Header */}
+      <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:28 }}>
+        <div>
+          <h1 style={{ fontSize:24,fontWeight:800,color:c.text,marginBottom:4 }}>Platform Settings</h1>
+          <p style={{ fontSize:13,color:c.textSub }}>Global configuration for the Porta platform</p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{ padding:"9px 22px",background:saved?c.accentBg:c.accent,border:saved?"1px solid "+c.accentDim:"none",borderRadius:9,color:saved?c.accent:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer",opacity:saving?0.7:1,fontFamily:"inherit",display:"flex",alignItems:"center",gap:7,transition:"all .2s" }}
+        >
+          {saving ? "Saving…" : saved ? "✓ Saved" : "Save changes"}
+        </button>
+      </div>
+
+      {/* Onboarding */}
+      <SectionLabel label="Onboarding" />
+      <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:12,overflow:"hidden",marginBottom:4 }}>
+        <SettingRow
+          label="Platform name"
+          desc="Name shown across the platform and in emails"
+          node={<input value={form.platformName ?? ""} onChange={e => set("platformName", e.target.value)} style={sinp()} placeholder="Porta"/>}
+        />
+        <SettingRow
+          label="Support email"
+          desc="Contact email shown to users needing help"
+          node={<input value={form.supportEmail ?? ""} onChange={e => set("supportEmail", e.target.value)} style={sinp()} placeholder="support@porta.com"/>}
+        />
+        <SettingRow
+          label="Trial period"
+          desc="Days new accounts get before needing a paid plan"
+          node={
+            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+              <input type="number" min={0} max={365} value={form.trialDays} onChange={e => set("trialDays", Number(e.target.value))} style={sinp(72)}/>
+              <span style={{ fontSize:12,color:c.textSub }}>days</span>
+            </div>
+          }
+        />
+        <SettingRow
+          label="Self-serve signups"
+          desc="Allow organisations to sign up without superadmin approval"
+          node={tog(form.selfServeSignups, "selfServeSignups")}
+        />
+        <SettingRow
+          label="Default plan"
+          desc="Plan assigned to new organisations on signup"
+          last
+          node={
+            <select value={form.defaultPlan} onChange={e => set("defaultPlan", e.target.value)} style={sinp()}>
+              <option value="free">Free</option>
+              <option value="pro">Pro</option>
+              <option value="enterprise">Enterprise</option>
+              <option value="custom">Custom</option>
+            </select>
+          }
+        />
+      </div>
+
+      {/* Security */}
+      <SectionLabel label="Security & Access" />
+      <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:12,overflow:"hidden",marginBottom:4 }}>
+        <SettingRow
+          label="Require email verification"
+          desc="Users must verify their email before accessing the platform"
+          node={tog(form.requireEmailVerify, "requireEmailVerify")}
+        />
+        <SettingRow
+          label="API key access"
+          desc="Minimum plan required to generate REST API keys"
+          node={
+            <select value={form.apiAccessTier} onChange={e => set("apiAccessTier", e.target.value)} style={sinp()}>
+              <option value="free">All plans</option>
+              <option value="pro">Pro+</option>
+              <option value="enterprise">Enterprise only</option>
+            </select>
+          }
+        />
+        <SettingRow
+          label="SSO enforcement"
+          desc="How single sign-on is handled for Enterprise accounts"
+          node={
+            <select value={form.ssoEnforcement} onChange={e => set("ssoEnforcement", e.target.value)} style={sinp()}>
+              <option value="optional">Optional</option>
+              <option value="required">Required</option>
+              <option value="disabled">Disabled</option>
+            </select>
+          }
+        />
+        <SettingRow
+          label="Maintenance mode"
+          desc="Lock the platform to read-only for all organisations"
+          last
+          node={tog(form.maintenanceMode ?? false, "maintenanceMode")}
+        />
+      </div>
+
+      {/* Billing */}
+      <SectionLabel label="Billing" />
+      <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:12,overflow:"hidden",marginBottom:28 }}>
+        <SettingRow
+          label="Default currency"
+          desc="Currency used for all plan pricing and invoices"
+          node={
+            <select value={form.currency} onChange={e => set("currency", e.target.value)} style={sinp()}>
+              {["USD","GBP","EUR","GHS","NGN","KES","ZAR"].map(cur => (
+                <option key={cur} value={cur}>{cur}</option>
+              ))}
+            </select>
+          }
+        />
+        <SettingRow
+          label="Annual billing discount"
+          desc="Percentage discount applied when organisations choose annual billing"
+          node={
+            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+              <input type="number" min={0} max={100} value={form.annualDiscount} onChange={e => set("annualDiscount", Number(e.target.value))} style={sinp(72)}/>
+              <span style={{ fontSize:12,color:c.textSub }}>%</span>
+            </div>
+          }
+        />
+        <SettingRow
+          label="Grace period"
+          desc="Days before blocking an organisation after a failed payment"
+          last
+          node={
+            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+              <input type="number" min={0} max={90} value={form.gracePeriodDays} onChange={e => set("gracePeriodDays", Number(e.target.value))} style={sinp(72)}/>
+              <span style={{ fontSize:12,color:c.textSub }}>days</span>
+            </div>
+          }
+        />
+      </div>
+
+      {/* Danger zone */}
+      <div style={{ background:c.dangerBg,border:"1px solid rgba(248,81,73,0.2)",borderRadius:12,padding:"20px 22px" }}>
+        <div style={{ fontSize:14,fontWeight:700,color:c.danger,marginBottom:4 }}>Danger zone</div>
+        <div style={{ fontSize:13,color:c.textSub,marginBottom:16 }}>These actions are irreversible and affect the entire platform.</div>
+        <div style={{ display:"flex",gap:10,flexWrap:"wrap" as const }}>
+          <button
+            onClick={() => setDangerModal("reset_flags")}
+            style={{ padding:"8px 16px",background:"transparent",border:"1px solid "+c.danger,borderRadius:8,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}
+          >
+            Reset all feature flags
+          </button>
+          <button
+            onClick={() => setDangerModal("clear_audit")}
+            style={{ padding:"8px 16px",background:"transparent",border:"1px solid "+c.danger,borderRadius:8,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}
+          >
+            Clear audit log
+          </button>
+        </div>
+      </div>
+
+      {/* Danger confirm modal */}
+      {dangerModal && (
+        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)" }}>
+          <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:14,padding:"28px 32px",width:420,fontFamily:"inherit",boxShadow:"0 32px 80px rgba(0,0,0,.4)" }}>
+            <div style={{ fontSize:18,fontWeight:700,color:c.danger,marginBottom:10 }}>Are you sure?</div>
+            <div style={{ fontSize:13,color:c.textSub,marginBottom:24,lineHeight:1.6 }}>
+              {dangerModal === "clear_audit" && "This will permanently delete all audit log entries. This cannot be undone."}
+              {dangerModal === "reset_flags" && "This will reset feature flags to their defaults for every organisation on the platform. This cannot be undone."}
+            </div>
+            <div style={{ display:"flex",gap:10,justifyContent:"flex-end" }}>
+              <button
+                onClick={() => setDangerModal(null)}
+                style={{ padding:"9px 18px",background:"transparent",border:"1px solid "+c.border,borderRadius:8,color:c.textSub,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDanger}
+                disabled={dangerLoading}
+                style={{ padding:"9px 18px",background:c.danger,border:"none",borderRadius:8,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",opacity:dangerLoading?0.6:1 }}
+              >
+                {dangerLoading ? "Processing…" : "Yes, proceed"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -749,53 +1028,7 @@ export function SuperAdminPage() {
         )}
 
         {/* SETTINGS */}
-        {tab==="settings" && (
-          <div style={{ padding:"32px 36px",maxWidth:700 }}>
-            <h1 style={{ fontSize:24,fontWeight:800,marginBottom:4,color:c.text }}>Settings</h1>
-            <p style={{ fontSize:13,color:c.textSub,marginBottom:28 }}>Global platform configuration</p>
-            {[
-              { group:"Onboarding", items:[
-                { title:"Trial period length",  desc:"Days new accounts get before needing paid plan", value:"14 days" },
-                { title:"Self-serve signups",   desc:"Allow orgs to sign up without superadmin approval", value:"Enabled" },
-                { title:"Default plan",         desc:"Plan assigned to new organisations on signup", value:"Free" },
-              ]},
-              { group:"Security & Access", items:[
-                { title:"Require email verification", desc:"Users must verify email before accessing",       value:"On" },
-                { title:"API key access",             desc:"Allow Pro+ orgs to generate REST API keys",      value:"Pro+" },
-                { title:"SSO enforcement",            desc:"Require SSO for Enterprise accounts",            value:"Optional" },
-              ]},
-              { group:"Billing", items:[
-                { title:"Default currency", desc:"Currency for all plan pricing and invoices", value:"USD" },
-                { title:"Annual discount",  desc:"Discount applied for annual billing",         value:"20%" },
-                { title:"Grace period",     desc:"Days before blocking after failed payment",   value:"7 days" },
-              ]},
-            ].map(section => (
-              <div key={section.group}>
-                <div style={{ fontSize:11,fontWeight:700,color:c.textMute,textTransform:"uppercase" as const,letterSpacing:"0.1em",marginBottom:10,marginTop:22 }}>{section.group}</div>
-                <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:12,overflow:"hidden",marginBottom:4 }}>
-                  {section.items.map((item,i,arr) => (
-                    <div key={item.title} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"15px 20px",borderBottom:i<arr.length-1?"1px solid "+c.border:"none" }}>
-                      <div>
-                        <div style={{ fontSize:14,fontWeight:600,color:c.text }}>{item.title}</div>
-                        <div style={{ fontSize:12,color:c.textSub,marginTop:2 }}>{item.desc}</div>
-                      </div>
-                      <div style={{ fontSize:13,fontWeight:600,color:c.accent,background:c.accentBg,padding:"4px 14px",borderRadius:20,flexShrink:0,marginLeft:16 }}>{item.value}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-            <div style={{ marginTop:24,background:c.dangerBg,border:"1px solid rgba(239,68,68,0.2)",borderRadius:12,padding:"20px 22px" }}>
-              <div style={{ fontSize:14,fontWeight:700,color:c.danger,marginBottom:4 }}>Danger zone</div>
-              <div style={{ fontSize:13,color:c.textSub,marginBottom:16 }}>These actions are irreversible and affect the entire platform.</div>
-              <div style={{ display:"flex",gap:10,flexWrap:"wrap" as const }}>
-                <button style={{ padding:"8px 16px",background:"transparent",border:"1px solid "+c.danger,borderRadius:8,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Reset all feature flags</button>
-                <button style={{ padding:"8px 16px",background:"transparent",border:"1px solid "+c.danger,borderRadius:8,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Clear audit log</button>
-                <button style={{ padding:"8px 16px",background:"transparent",border:"1px solid "+c.danger,borderRadius:8,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Export all data</button>
-              </div>
-            </div>
-          </div>
-        )}
+        {tab==="settings" && <SettingsPanel user={user} c={c} />}
 
       </main>
 
@@ -811,14 +1044,12 @@ export function SuperAdminPage() {
             <Field label="Contact phone" c={c}><input value={form.ownerPhone} onChange={e=>setForm(f=>({...f,ownerPhone:e.target.value}))} placeholder="+1 555 000 0000" style={inp(c)}/></Field>
             <Field label="Website" c={c}><input value={form.website} onChange={e=>setForm(f=>({...f,website:e.target.value}))} placeholder="https://acme.com" style={inp(c)}/></Field>
             <Field label="Address" c={c}><input value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} placeholder="123 Main St" style={inp(c)}/></Field>
-
             <Field label="Plan" c={c}><select value={form.plan} onChange={e=>setForm(f=>({...f,plan:e.target.value as Plan}))} style={{ ...inp(c),cursor:"pointer" }}>{planDefs.map(pp=><option key={pp.id} value={pp.id}>{pp.name}</option>)}</select></Field>
             <Field label="Max users" c={c}><input value={form.maxUsers} onChange={e=>setForm(f=>({...f,maxUsers:e.target.value}))} placeholder="50" style={inp(c)}/></Field>
             <Field label="Max locations" c={c}><input value={form.maxLocations} onChange={e=>setForm(f=>({...f,maxLocations:e.target.value}))} placeholder="5" style={inp(c)}/></Field>
             <div style={{ gridColumn:"1/-1" }}>
               <Field label="Admin notes" c={c}><textarea value={form.adminNotes} onChange={e=>setForm(f=>({...f,adminNotes:e.target.value}))} placeholder="Internal notes..." style={{ ...inp(c),minHeight:70,resize:"vertical" }}/></Field>
             </div>
-            {/* ── Appointment rules section ── */}
             <div style={{ gridColumn:"1/-1",marginTop:4 }}>
               <div style={{ fontSize:11,fontWeight:700,color:c.textMute,textTransform:"uppercase" as const,letterSpacing:"0.1em",marginBottom:10 }}>Appointment rules</div>
               <BookingRuleRow label="Require visitor ID" desc="Visitors must present a valid ID at check-in" on={form.bookingRules.idRequired} onChange={()=>setForm(f=>({...f,bookingRules:{...f.bookingRules,idRequired:!f.bookingRules.idRequired}}))} c={c}/>
@@ -853,13 +1084,11 @@ export function SuperAdminPage() {
             <Field label="Contact phone" c={c}><input value={editForm.ownerPhone} onChange={e=>setEditForm((f:any)=>({...f,ownerPhone:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Website" c={c}><input value={editForm.website} onChange={e=>setEditForm((f:any)=>({...f,website:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Address" c={c}><input value={editForm.address} onChange={e=>setEditForm((f:any)=>({...f,address:e.target.value}))} style={inp(c)}/></Field>
-            
             <Field label="Max users" c={c}><input value={editForm.maxUsers} onChange={e=>setEditForm((f:any)=>({...f,maxUsers:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Max locations" c={c}><input value={editForm.maxLocations} onChange={e=>setEditForm((f:any)=>({...f,maxLocations:e.target.value}))} style={inp(c)}/></Field>
             <div style={{ gridColumn:"1/-1" }}>
               <Field label="Admin notes" c={c}><textarea value={editForm.adminNotes} onChange={e=>setEditForm((f:any)=>({...f,adminNotes:e.target.value}))} style={{ ...inp(c),minHeight:70,resize:"vertical" }}/></Field>
             </div>
-            {/* ── Appointment rules section ── */}
             <div style={{ gridColumn:"1/-1",marginTop:4 }}>
               <div style={{ fontSize:11,fontWeight:700,color:c.textMute,textTransform:"uppercase" as const,letterSpacing:"0.1em",marginBottom:10 }}>Appointment rules</div>
               <BookingRuleRow label="Require visitor ID" desc="Visitors must present a valid ID at check-in" on={editForm.bookingRules?.idRequired??false} onChange={()=>setEditForm((f:any)=>({...f,bookingRules:{...f.bookingRules,idRequired:!f.bookingRules?.idRequired}}))} c={c}/>
