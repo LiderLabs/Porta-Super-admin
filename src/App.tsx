@@ -1,17 +1,16 @@
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+﻿import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import React, { useState } from "react";
 import { useUser, useClerk, useSignIn, SignOutButton } from "@clerk/clerk-react";
 import { SuperAdminPage } from "./features/superadmin/pages/SuperAdminPage";
 
-// ─── Login ────────────────────────────────────────────────────────────────────
 function CustomLogin() {
   const { signIn, isLoaded, setActive } = useSignIn()!;
-  const [email, setEmail]   = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [code, setCode]     = useState("");
-  const [step, setStep]     = useState<"creds"|"mfa">("creds");
-  const [error, setError]   = useState("");
-  const [loading, setLoading] = useState(false);
+  const [code, setCode]         = useState("");
+  const [step, setStep]         = useState<"creds"|"mfa">("creds");
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +22,7 @@ function CustomLogin() {
         await setActive({ session: result.createdSessionId });
         window.location.reload();
       } else if (result.status === "needs_second_factor") {
+        await signIn.prepareSecondFactor({ strategy: "email_code" });
         setStep("mfa");
       } else {
         setError("Unexpected status: " + result.status);
@@ -49,78 +49,82 @@ function CustomLogin() {
     } finally { setLoading(false); }
   };
 
-  const S: React.CSSProperties     = { display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#080a0f" };
-  const card: React.CSSProperties  = { width:"360px",background:"#0d1117",border:"1px solid #21262d",borderRadius:"16px",padding:"36px",display:"flex",flexDirection:"column",gap:"20px" };
-  const inpS: React.CSSProperties  = { padding:"10px 12px",background:"#161b22",border:"1px solid #21262d",borderRadius:"8px",color:"#e6edf3",fontSize:"13px",outline:"none",fontFamily:"DM Sans,sans-serif",width:"100%",boxSizing:"border-box" };
-  const btn: React.CSSProperties   = { padding:"11px",background:"#45ba50",color:"#020203",border:"none",borderRadius:"8px",fontSize:"13px",fontWeight:700,cursor:"pointer",fontFamily:"DM Sans,sans-serif",width:"100%" };
-  const lbl: React.CSSProperties   = { fontSize:"12px",fontWeight:600,color:"#8b949e",display:"block",marginBottom:"5px" };
-  const errBox: React.CSSProperties = { fontSize:"12px",color:"#f85149",background:"rgba(248,81,73,0.08)",border:"1px solid rgba(248,81,73,0.2)",borderRadius:"6px",padding:"8px 12px" };
-
   return (
-    <div style={S}>
-      <div style={card}>
-        {/* Logo */}
-        <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
-          <img src="/Porta.png" alt="Porta" style={{height:"32px",width:"auto"}}/>
-          <div>
-            <div style={{ fontSize:"9px",fontWeight:900,letterSpacing:"0.12em",color:"#45ba50",fontFamily:"DM Mono,monospace" }}>SUPERADMIN</div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; background: #0d1117; color: #e6edf3; }
+        .sa-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #0d1117; padding: 24px; }
+        .sa-card { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 400px; animation: fadeUp .3s cubic-bezier(.16,1,.3,1) both; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .sa-brand { text-align: center; margin-bottom: 28px; }
+        .sa-logo { height: 52px; width: auto; margin: 0 auto 10px; display: block; }
+        .sa-badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #3fb950; background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.25); border-radius: 999px; padding: 3px 10px; }
+        .sa-title { font-size: 1.35rem; font-weight: 700; color: #e6edf3; margin-bottom: 6px; }
+        .sa-sub { font-size: 0.85rem; color: #8b949e; }
+        .sa-form { display: flex; flex-direction: column; gap: 18px; }
+        .sa-field { display: flex; flex-direction: column; gap: 6px; }
+        .sa-label { font-size: 0.78rem; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: .05em; }
+        .sa-input { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 11px 14px; font-size: 0.9rem; color: #e6edf3; font-family: inherit; outline: none; transition: border-color .15s; width: 100%; }
+        .sa-input:focus { border-color: #3fb950; }
+        .sa-input::placeholder { color: #484f58; }
+        .sa-input--code { letter-spacing: 0.3em; font-size: 1.1rem; text-align: center; }
+        .sa-error { font-size: 0.8rem; color: #f85149; background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3); border-radius: 8px; padding: 10px 14px; }
+        .sa-btn { background: #3fb950; color: #fff; border: none; border-radius: 8px; padding: 12px; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity .15s; width: 100%; }
+        .sa-btn:hover:not(:disabled) { opacity: 0.88; }
+        .sa-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .sa-back { background: none; border: none; color: #8b949e; font-size: 0.82rem; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 4px; padding: 0; }
+        .sa-back:hover { color: #e6edf3; }
+        @media (max-width: 480px) { .sa-card { padding: 32px 24px; } }
+      `}</style>
+      <div className="sa-page">
+        <div className="sa-card">
+          <div className="sa-brand">
+            <img src="/Porta.png" alt="Porta" className="sa-logo" />
+            <span className="sa-badge">SUPERADMIN</span>
           </div>
+          {step === "creds" ? (
+            <>
+              <div style={{marginBottom:"28px"}}>
+                <p className="sa-title">Welcome back</p>
+                <p className="sa-sub">Sign in to the Porta control panel.</p>
+              </div>
+              <form className="sa-form" onSubmit={handleLogin}>
+                <div className="sa-field">
+                  <label className="sa-label">Email address</label>
+                  <input className="sa-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@porta.com" required autoComplete="email" />
+                </div>
+                <div className="sa-field">
+                  <label className="sa-label">Password</label>
+                  <input className="sa-input" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required autoComplete="current-password" />
+                </div>
+                {error && <div className="sa-error">{error}</div>}
+                <button type="submit" className="sa-btn" disabled={loading || !isLoaded}>{loading ? "Signing in..." : "Sign in"}</button>
+              </form>
+            </>
+          ) : (
+            <>
+              <div style={{marginBottom:"28px"}}>
+                <p className="sa-title">Two-step verification</p>
+                <p className="sa-sub">Enter the 6-digit code sent to your email.</p>
+              </div>
+              <form className="sa-form" onSubmit={handleVerify}>
+                <div className="sa-field">
+                  <label className="sa-label">Verification code</label>
+                  <input className="sa-input sa-input--code" type="text" inputMode="numeric" maxLength={6} value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,""))} placeholder="000000" required autoFocus />
+                </div>
+                {error && <div className="sa-error">{error}</div>}
+                <button type="submit" className="sa-btn" disabled={loading || code.length !== 6}>{loading ? "Verifying..." : "Verify & continue"}</button>
+                <button type="button" className="sa-back" onClick={()=>{setStep("creds");setError("");setCode("");}}>Back to sign in</button>
+              </form>
+            </>
+          )}
         </div>
-
-        {/* Heading */}
-        <div>
-          <div style={{ fontSize:"20px",fontWeight:800,color:"#e6edf3",fontFamily:"DM Sans,sans-serif",marginBottom:"4px" }}>
-            
-          </div>
-          <div style={{ fontSize:"13px",color:"#8b949e",fontFamily:"DM Sans,sans-serif" }}>
-            {step==="mfa" ? "Enter the 6-digit code sent to your email." : ""}
-          </div>
-        </div>
-
-        {/* Credentials form */}
-        {step==="creds" ? (
-          <form onSubmit={handleLogin} style={{ display:"flex",flexDirection:"column",gap:"14px" }}>
-            <div>
-              <label style={lbl}>Email</label>
-              <input style={inpS} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@porta.com" required autoComplete="email"/>
-            </div>
-            <div>
-              <label style={lbl}>Password</label>
-              <input style={inpS} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="��������" required autoComplete="current-password"/>
-            </div>
-            {error && <div style={errBox}>{error}</div>}
-            <button type="submit" style={{ ...btn,opacity:loading||!isLoaded?0.5:1 }} disabled={loading||!isLoaded}>
-              {loading ? "Signing in..." : "Sign in"}
-            </button>
-          </form>
-        ) : (
-          /* MFA form */
-          <form onSubmit={handleVerify} style={{ display:"flex",flexDirection:"column",gap:"14px" }}>
-            <div>
-              <label style={lbl}>Verification code</label>
-              <input
-                style={{ ...inpS,letterSpacing:"0.2em",textAlign:"center" }}
-                type="text" inputMode="numeric" maxLength={6}
-                value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,""))}
-                placeholder="000000" required autoFocus
-              />
-            </div>
-            {error && <div style={errBox}>{error}</div>}
-            <button type="submit" style={{ ...btn,opacity:loading||code.length!==6?0.5:1 }} disabled={loading||code.length!==6}>
-              {loading ? "Verifying..." : "Verify"}
-            </button>
-            <button type="button" onClick={()=>{setStep("creds");setError("");setCode("");}}
-              style={{ background:"none",border:"none",color:"#8b949e",fontSize:"12px",cursor:"pointer",fontFamily:"DM Sans,sans-serif",display:"flex",alignItems:"center",gap:6 }}>
-              &larr; Back to sign in
-            </button>
-          </form>
-        )}
       </div>
-    </div>
+    </>
   );
 }
-
-// ─── Auth guard ───────────────────────────────────────────────────────────────
 function Guard({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn, user } = useUser();
 
@@ -136,7 +140,7 @@ function Guard({ children }: { children: React.ReactNode }) {
   const role = (user.publicMetadata as any)?.role;
   if (role !== "superadmin") return (
     <div style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#080a0f",gap:"16px",fontFamily:"DM Sans,sans-serif" }}>
-      <div style={{ fontSize:"48px" }}>🚫</div>
+      <div style={{ fontSize:"48px" }}>ðŸš«</div>
       <div style={{ fontSize:"20px",fontWeight:700,color:"#e6edf3" }}>Access Denied</div>
       <div style={{ fontSize:"14px",color:"#8b949e" }}>This area is restricted to Porta superadmins only.</div>
       <div style={{ fontSize:"12px",color:"#30363d",marginTop:"8px" }}>Signed in as: {user.primaryEmailAddress?.emailAddress}</div>
@@ -153,7 +157,7 @@ function Guard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// ─── Router ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Router â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const router = createBrowserRouter([
   { path: "/",  element: <Guard><SuperAdminPage /></Guard> },
   { path: "*",  element: <Navigate to="/" /> },
