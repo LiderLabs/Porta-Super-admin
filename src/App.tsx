@@ -1,9 +1,9 @@
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+﻿import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import React, { useState } from "react";
 import { useUser, useClerk, useSignIn, SignOutButton } from "@clerk/clerk-react";
 import { SuperAdminPage } from "./features/superadmin/pages/SuperAdminPage";
 
-// ─── Login ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CustomLogin() {
   const { signIn, isLoaded, setActive } = useSignIn()!;
   const [email, setEmail]   = useState("");
@@ -61,20 +61,19 @@ function CustomLogin() {
       <div style={card}>
         {/* Logo */}
         <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
-          <div style={{ width:"36px",height:"36px",borderRadius:"8px",background:"#45ba50",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",fontWeight:800,color:"#020203" }}>P</div>
+          <img src="/Porta.png" alt="Porta" style={{height:"32px",width:"auto"}}/>
           <div>
-            <div style={{ fontSize:"16px",fontWeight:800,color:"#e6edf3",fontFamily:"DM Sans,sans-serif" }}>Porta</div>
-            <div style={{ fontSize:"9px",fontWeight:700,letterSpacing:"0.1em",color:"#45ba50",fontFamily:"DM Mono,monospace" }}>SUPERADMIN</div>
+            <div style={{ fontSize:"9px",fontWeight:900,letterSpacing:"0.12em",color:"#45ba50",fontFamily:"DM Mono,monospace" }}>SUPERADMIN</div>
           </div>
         </div>
 
         {/* Heading */}
         <div>
           <div style={{ fontSize:"20px",fontWeight:800,color:"#e6edf3",fontFamily:"DM Sans,sans-serif",marginBottom:"4px" }}>
-            {step==="mfa" ? "Check your email" : "Welcome back"}
+            
           </div>
           <div style={{ fontSize:"13px",color:"#8b949e",fontFamily:"DM Sans,sans-serif" }}>
-            {step==="mfa" ? "Enter the 6-digit code sent to your email." : "Sign in to your superadmin account"}
+            {step==="mfa" ? "Enter the 6-digit code sent to your email." : ""}
           </div>
         </div>
 
@@ -121,7 +120,7 @@ function CustomLogin() {
   );
 }
 
-// ─── Auth guard ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Auth guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Guard({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn, user } = useUser();
 
@@ -137,7 +136,7 @@ function Guard({ children }: { children: React.ReactNode }) {
   const role = (user.publicMetadata as any)?.role;
   if (role !== "superadmin") return (
     <div style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#080a0f",gap:"16px",fontFamily:"DM Sans,sans-serif" }}>
-      <div style={{ fontSize:"48px" }}>🚫</div>
+      <div style={{ fontSize:"48px" }}>ðŸš«</div>
       <div style={{ fontSize:"20px",fontWeight:700,color:"#e6edf3" }}>Access Denied</div>
       <div style={{ fontSize:"14px",color:"#8b949e" }}>This area is restricted to Porta superadmins only.</div>
       <div style={{ fontSize:"12px",color:"#30363d",marginTop:"8px" }}>Signed in as: {user.primaryEmailAddress?.emailAddress}</div>
@@ -154,7 +153,7 @@ function Guard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// ─── Router ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Router â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const router = createBrowserRouter([
   { path: "/",  element: <Guard><SuperAdminPage /></Guard> },
   { path: "*",  element: <Navigate to="/" /> },
@@ -163,3 +162,8 @@ const router = createBrowserRouter([
 export default function App() {
   return <RouterProvider router={router} />;
 }
+
+
+
+
+
