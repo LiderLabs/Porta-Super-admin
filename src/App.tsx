@@ -55,7 +55,7 @@ function CustomLogin() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'DM Sans', sans-serif; background: #0d1117; color: #e6edf3; }
-        .sa-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #0d1117; padding: 24px; }
+        .sa-page { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0d1117; padding: 24px; }
         .sa-card { background: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 400px; animation: fadeUp .3s cubic-bezier(.16,1,.3,1) both; }
         @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
         .sa-brand { text-align: center; margin-bottom: 28px; }
@@ -121,6 +121,7 @@ function CustomLogin() {
             </>
           )}
         </div>
+      <div style={{textAlign:"center",padding:"12px 24px",fontSize:"12px",fontWeight:600,color:"#3fb950",letterSpacing:"0.04em",opacity:0.85,marginTop:"16px"}}>© {new Date().getFullYear()} Porta · Powered by Lider Technologies LTD</div>
       </div>
     </>
   );
@@ -166,6 +167,7 @@ const router = createBrowserRouter([
 export default function App() {
   return <RouterProvider router={router} />;
 }
+
 
 
 

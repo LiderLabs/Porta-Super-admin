@@ -681,7 +681,7 @@ export function SuperAdminPage() {
       </aside>
 
       {/* ── MAIN ───────────────────────────────────────────────────────── */}
-      <main style={{ flex:1,overflow:"auto",minWidth:0,background:c.bg }}>
+      <main style={{ flex:1,overflow:"auto",minWidth:0,background:c.bg,display:"flex",flexDirection:"column" }}>
 
         {/* OVERVIEW */}
         {tab==="overview" && (
@@ -1030,6 +1030,7 @@ export function SuperAdminPage() {
         {/* SETTINGS */}
         {tab==="settings" && <SettingsPanel user={user} c={c} />}
 
+        <div style={{textAlign:"center",padding:"12px 36px",fontSize:"12px",fontWeight:600,color:"#3fb950",letterSpacing:"0.04em",opacity:0.85}}>© {new Date().getFullYear()} Porta · Powered by Lider Technologies LTD</div>
       </main>
 
       {/* ── CREATE MODAL ───────────────────────────────────────────────── */}
