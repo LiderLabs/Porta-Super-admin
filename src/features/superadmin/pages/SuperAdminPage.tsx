@@ -511,6 +511,7 @@ export function SuperAdminPage() {
   const { theme, toggle, c } = useTheme();
 
   const [tab, setTab]                     = React.useState<Tab>("overview");
+  const [mobileOpen, setMobileOpen]       = React.useState(false);
   const [search, setSearch]               = React.useState("");
   const [planFilter, setPlanFilter]       = React.useState<"ALL"|Plan>("ALL");
   const [statusFilter, setStatusFilter]   = React.useState<"ALL"|OrgStatus>("ALL");
@@ -632,10 +633,10 @@ export function SuperAdminPage() {
   const groups = ["Platform","System"];
 
   return (
-    <div style={{ display:"flex",height:"100vh",fontFamily:"'DM Sans','Inter',system-ui,sans-serif",background:c.bg,color:c.text }}>
+    <div style={{ display:"flex",height:"100vh",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",background:c.bg,color:c.text }}>
 
       {/* ── SIDEBAR ────────────────────────────────────────────────────── */}
-      <aside style={{ width:232,flexShrink:0,background:c.surface,borderRight:"1px solid "+c.border,display:"flex",flexDirection:"column",height:"100vh",position:"sticky",top:0 }}>
+      <aside className="sa-sidebar" style={{ width:232,flexShrink:0,background:c.surface,borderRight:"1px solid "+c.border,display:"flex",flexDirection:"column",height:"100vh",position:"sticky",top:0 }}>
         <div style={{ padding:"20px 18px 16px",borderBottom:"1px solid "+c.border,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10 }}>
             <div style={{ width:36,height:36,borderRadius:10,background:c.accent,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:18,color:"#fff" }}>P</div>
@@ -680,8 +681,57 @@ export function SuperAdminPage() {
         </div>
       </aside>
 
+      {/* ── MOBILE HEADER ── */}
+      <div className="sa-mobile-header" style={{display:"none",position:"fixed",top:0,left:0,right:0,height:56,background:c.surface,borderBottom:"1px solid "+c.border,alignItems:"center",justifyContent:"space-between",padding:"0 16px",zIndex:100}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <button onClick={()=>setMobileOpen(true)} style={{background:"none",border:"1px solid "+c.border,borderRadius:8,padding:"7px 8px",color:c.textSub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:28,height:28,borderRadius:7,background:c.accent,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,color:"#fff"}}>P</div>
+            <span style={{fontWeight:800,fontSize:14,color:c.text}}>Porta <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",color:c.accent,textTransform:"uppercase"}}>Superadmin</span></span>
+          </div>
+        </div>
+        <button onClick={toggle} style={{background:"none",border:"1px solid "+c.border,borderRadius:8,padding:"7px 8px",color:c.textSub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {theme==="dark" ? <IcoSun/> : <IcoMoon/>}
+        </button>
+      </div>
+
+      {/* ── MOBILE DRAWER ── */}
+      {mobileOpen&&(
+        <div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
+          <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)"}} onClick={()=>setMobileOpen(false)}/>
+          <div style={{position:"relative",width:240,background:c.surface,borderRight:"1px solid "+c.border,display:"flex",flexDirection:"column",height:"100vh",overflowY:"auto",animation:"slideInSA .2s ease"}}>
+            <style>{`@keyframes slideInSA{from{transform:translateX(-100%)}to{transform:translateX(0)}}`}</style>
+            <div style={{padding:"18px 16px 14px",borderBottom:"1px solid "+c.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:32,height:32,borderRadius:9,background:c.accent,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:16,color:"#fff"}}>P</div>
+                <div>
+                  <div style={{fontWeight:800,fontSize:14,color:c.text}}>Porta</div>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",color:c.accent,textTransform:"uppercase"}}>Superadmin</div>
+                </div>
+              </div>
+              <button onClick={()=>setMobileOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:c.textSub,fontSize:18,padding:"2px 6px"}}>✕</button>
+            </div>
+            <nav style={{padding:10,flex:1}}>
+              {NAV.map(n=>(
+                <button key={n.id} onClick={()=>{setTab(n.id);setMobileOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",borderRadius:8,border:"none",background:tab===n.id?c.accentBg:"transparent",color:tab===n.id?c.accent:c.textSub,fontSize:13,fontWeight:tab===n.id?700:400,cursor:"pointer",textAlign:"left",marginBottom:2,fontFamily:"inherit"}}>
+                  <n.Icon/><span>{n.label}</span>
+                </button>
+              ))}
+            </nav>
+            <div style={{padding:"12px 14px",borderTop:"1px solid "+c.border}}>
+              <button onClick={()=>signOut()} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+c.border,background:"transparent",color:c.textSub,fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>
+                <IcoLogout/>Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* ── MAIN ───────────────────────────────────────────────────────── */}
-      <main style={{ flex:1,overflow:"auto",minWidth:0,background:c.bg,display:"flex",flexDirection:"column" }}>
+      <main style={{ flex:1,overflow:"auto",paddingTop:0,minWidth:0,background:c.bg,display:"flex",flexDirection:"column" }}>
 
         {/* OVERVIEW */}
         {tab==="overview" && (
