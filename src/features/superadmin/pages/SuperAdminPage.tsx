@@ -1,4 +1,5 @@
-﻿import React from "react";
+﻿
+import React from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/api";
 import { useUser, useClerk } from "@clerk/clerk-react";
@@ -79,7 +80,6 @@ const IcoLogout    = Ico("M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M
 const IcoChevR     = Ico("M9 18l6-6-6-6");
 const IcoUpload    = Ico("M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12");
 const IcoShield    = Ico("M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z");
-const IcoArrowBack = Ico("M19 12H5M12 19l-7-7 7-7");
 const IcoId        = Ico("M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM7 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM13 10h5M13 14h3");
 
 // ─── useTheme ─────────────────────────────────────────────────────────────────
@@ -318,7 +318,6 @@ function SettingsPanel({ user, c }: { user: any; c: Record<string,string> }) {
 
   return (
     <div style={{ padding:"32px 36px",maxWidth:740 }}>
-      {/* Header */}
       <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:28 }}>
         <div>
           <h1 style={{ fontSize:24,fontWeight:800,color:c.text,marginBottom:4 }}>Platform Settings</h1>
@@ -333,145 +332,39 @@ function SettingsPanel({ user, c }: { user: any; c: Record<string,string> }) {
         </button>
       </div>
 
-      {/* Onboarding */}
       <SectionLabel label="Onboarding" />
       <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:12,overflow:"hidden",marginBottom:4 }}>
-        <SettingRow
-          label="Platform name"
-          desc="Name shown across the platform and in emails"
-          node={<input value={form.platformName ?? ""} onChange={e => set("platformName", e.target.value)} style={sinp()} placeholder="Porta"/>}
-        />
-        <SettingRow
-          label="Support email"
-          desc="Contact email shown to users needing help"
-          node={<input value={form.supportEmail ?? ""} onChange={e => set("supportEmail", e.target.value)} style={sinp()} placeholder="support@porta.com"/>}
-        />
-        <SettingRow
-          label="Trial period"
-          desc="Days new accounts get before needing a paid plan"
-          node={
-            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-              <input type="number" min={0} max={365} value={form.trialDays} onChange={e => set("trialDays", Number(e.target.value))} style={sinp(72)}/>
-              <span style={{ fontSize:12,color:c.textSub }}>days</span>
-            </div>
-          }
-        />
-        <SettingRow
-          label="Self-serve signups"
-          desc="Allow organisations to sign up without superadmin approval"
-          node={tog(form.selfServeSignups, "selfServeSignups")}
-        />
-        <SettingRow
-          label="Default plan"
-          desc="Plan assigned to new organisations on signup"
-          last
-          node={
-            <select value={form.defaultPlan} onChange={e => set("defaultPlan", e.target.value)} style={sinp()}>
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-              <option value="enterprise">Enterprise</option>
-              <option value="custom">Custom</option>
-            </select>
-          }
-        />
+        <SettingRow label="Platform name" desc="Name shown across the platform and in emails" node={<input value={form.platformName ?? ""} onChange={e => set("platformName", e.target.value)} style={sinp()} placeholder="Porta"/>}/>
+        <SettingRow label="Support email" desc="Contact email shown to users needing help" node={<input value={form.supportEmail ?? ""} onChange={e => set("supportEmail", e.target.value)} style={sinp()} placeholder="support@porta.com"/>}/>
+        <SettingRow label="Trial period" desc="Days new accounts get before needing a paid plan" node={<div style={{ display:"flex",alignItems:"center",gap:8 }}><input type="number" min={0} max={365} value={form.trialDays} onChange={e => set("trialDays", Number(e.target.value))} style={sinp(72)}/><span style={{ fontSize:12,color:c.textSub }}>days</span></div>}/>
+        <SettingRow label="Self-serve signups" desc="Allow organisations to sign up without superadmin approval" node={tog(form.selfServeSignups, "selfServeSignups")}/>
+        <SettingRow last label="Default plan" desc="Plan assigned to new organisations on signup" node={<select value={form.defaultPlan} onChange={e => set("defaultPlan", e.target.value)} style={sinp()}><option value="free">Free</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option><option value="custom">Custom</option></select>}/>
       </div>
 
-      {/* Security */}
       <SectionLabel label="Security & Access" />
       <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:12,overflow:"hidden",marginBottom:4 }}>
-        <SettingRow
-          label="Require email verification"
-          desc="Users must verify their email before accessing the platform"
-          node={tog(form.requireEmailVerify, "requireEmailVerify")}
-        />
-        <SettingRow
-          label="API key access"
-          desc="Minimum plan required to generate REST API keys"
-          node={
-            <select value={form.apiAccessTier} onChange={e => set("apiAccessTier", e.target.value)} style={sinp()}>
-              <option value="free">All plans</option>
-              <option value="pro">Pro+</option>
-              <option value="enterprise">Enterprise only</option>
-            </select>
-          }
-        />
-        <SettingRow
-          label="SSO enforcement"
-          desc="How single sign-on is handled for Enterprise accounts"
-          node={
-            <select value={form.ssoEnforcement} onChange={e => set("ssoEnforcement", e.target.value)} style={sinp()}>
-              <option value="optional">Optional</option>
-              <option value="required">Required</option>
-              <option value="disabled">Disabled</option>
-            </select>
-          }
-        />
-        <SettingRow
-          label="Maintenance mode"
-          desc="Lock the platform to read-only for all organisations"
-          last
-          node={tog(form.maintenanceMode ?? false, "maintenanceMode")}
-        />
+        <SettingRow label="Require email verification" desc="Users must verify their email before accessing the platform" node={tog(form.requireEmailVerify, "requireEmailVerify")}/>
+        <SettingRow label="API key access" desc="Minimum plan required to generate REST API keys" node={<select value={form.apiAccessTier} onChange={e => set("apiAccessTier", e.target.value)} style={sinp()}><option value="free">All plans</option><option value="pro">Pro+</option><option value="enterprise">Enterprise only</option></select>}/>
+        <SettingRow label="SSO enforcement" desc="How single sign-on is handled for Enterprise accounts" node={<select value={form.ssoEnforcement} onChange={e => set("ssoEnforcement", e.target.value)} style={sinp()}><option value="optional">Optional</option><option value="required">Required</option><option value="disabled">Disabled</option></select>}/>
+        <SettingRow last label="Maintenance mode" desc="Lock the platform to read-only for all organisations" node={tog(form.maintenanceMode ?? false, "maintenanceMode")}/>
       </div>
 
-      {/* Billing */}
       <SectionLabel label="Billing" />
       <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:12,overflow:"hidden",marginBottom:28 }}>
-        <SettingRow
-          label="Default currency"
-          desc="Currency used for all plan pricing and invoices"
-          node={
-            <select value={form.currency} onChange={e => set("currency", e.target.value)} style={sinp()}>
-              {["USD","GBP","EUR","GHS","NGN","KES","ZAR"].map(cur => (
-                <option key={cur} value={cur}>{cur}</option>
-              ))}
-            </select>
-          }
-        />
-        <SettingRow
-          label="Annual billing discount"
-          desc="Percentage discount applied when organisations choose annual billing"
-          node={
-            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-              <input type="number" min={0} max={100} value={form.annualDiscount} onChange={e => set("annualDiscount", Number(e.target.value))} style={sinp(72)}/>
-              <span style={{ fontSize:12,color:c.textSub }}>%</span>
-            </div>
-          }
-        />
-        <SettingRow
-          label="Grace period"
-          desc="Days before blocking an organisation after a failed payment"
-          last
-          node={
-            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-              <input type="number" min={0} max={90} value={form.gracePeriodDays} onChange={e => set("gracePeriodDays", Number(e.target.value))} style={sinp(72)}/>
-              <span style={{ fontSize:12,color:c.textSub }}>days</span>
-            </div>
-          }
-        />
+        <SettingRow label="Default currency" desc="Currency used for all plan pricing and invoices" node={<select value={form.currency} onChange={e => set("currency", e.target.value)} style={sinp()}>{["USD","GBP","EUR","GHS","NGN","KES","ZAR"].map(cur => (<option key={cur} value={cur}>{cur}</option>))}</select>}/>
+        <SettingRow label="Annual billing discount" desc="Percentage discount applied when organisations choose annual billing" node={<div style={{ display:"flex",alignItems:"center",gap:8 }}><input type="number" min={0} max={100} value={form.annualDiscount} onChange={e => set("annualDiscount", Number(e.target.value))} style={sinp(72)}/><span style={{ fontSize:12,color:c.textSub }}>%</span></div>}/>
+        <SettingRow last label="Grace period" desc="Days before blocking an organisation after a failed payment" node={<div style={{ display:"flex",alignItems:"center",gap:8 }}><input type="number" min={0} max={90} value={form.gracePeriodDays} onChange={e => set("gracePeriodDays", Number(e.target.value))} style={sinp(72)}/><span style={{ fontSize:12,color:c.textSub }}>days</span></div>}/>
       </div>
 
-      {/* Danger zone */}
       <div style={{ background:c.dangerBg,border:"1px solid rgba(248,81,73,0.2)",borderRadius:12,padding:"20px 22px" }}>
         <div style={{ fontSize:14,fontWeight:700,color:c.danger,marginBottom:4 }}>Danger zone</div>
         <div style={{ fontSize:13,color:c.textSub,marginBottom:16 }}>These actions are irreversible and affect the entire platform.</div>
         <div style={{ display:"flex",gap:10,flexWrap:"wrap" as const }}>
-          <button
-            onClick={() => setDangerModal("reset_flags")}
-            style={{ padding:"8px 16px",background:"transparent",border:"1px solid "+c.danger,borderRadius:8,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}
-          >
-            Reset all feature flags
-          </button>
-          <button
-            onClick={() => setDangerModal("clear_audit")}
-            style={{ padding:"8px 16px",background:"transparent",border:"1px solid "+c.danger,borderRadius:8,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}
-          >
-            Clear audit log
-          </button>
+          <button onClick={() => setDangerModal("reset_flags")} style={{ padding:"8px 16px",background:"transparent",border:"1px solid "+c.danger,borderRadius:8,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Reset all feature flags</button>
+          <button onClick={() => setDangerModal("clear_audit")} style={{ padding:"8px 16px",background:"transparent",border:"1px solid "+c.danger,borderRadius:8,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Clear audit log</button>
         </div>
       </div>
 
-      {/* Danger confirm modal */}
       {dangerModal && (
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,backdropFilter:"blur(4px)" }}>
           <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:14,padding:"28px 32px",width:420,fontFamily:"inherit",boxShadow:"0 32px 80px rgba(0,0,0,.4)" }}>
@@ -481,19 +374,8 @@ function SettingsPanel({ user, c }: { user: any; c: Record<string,string> }) {
               {dangerModal === "reset_flags" && "This will reset feature flags to their defaults for every organisation on the platform. This cannot be undone."}
             </div>
             <div style={{ display:"flex",gap:10,justifyContent:"flex-end" }}>
-              <button
-                onClick={() => setDangerModal(null)}
-                style={{ padding:"9px 18px",background:"transparent",border:"1px solid "+c.border,borderRadius:8,color:c.textSub,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDanger}
-                disabled={dangerLoading}
-                style={{ padding:"9px 18px",background:c.danger,border:"none",borderRadius:8,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",opacity:dangerLoading?0.6:1 }}
-              >
-                {dangerLoading ? "Processing…" : "Yes, proceed"}
-              </button>
+              <button onClick={() => setDangerModal(null)} style={{ padding:"9px 18px",background:"transparent",border:"1px solid "+c.border,borderRadius:8,color:c.textSub,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
+              <button onClick={handleDanger} disabled={dangerLoading} style={{ padding:"9px 18px",background:c.danger,border:"none",borderRadius:8,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit",opacity:dangerLoading?0.6:1 }}>{dangerLoading ? "Processing…" : "Yes, proceed"}</button>
             </div>
           </div>
         </div>
@@ -521,6 +403,7 @@ export function SuperAdminPage() {
   const [deleteConfirm, setDeleteConfirm] = React.useState<any>(null);
   const [blockReason, setBlockReason]     = React.useState("");
   const [submitting, setSubmitting]       = React.useState(false);
+  const [createdOrg, setCreatedOrg]       = React.useState<{name:string,slug:string}|null>(null);
   const [planDefs, setPlanDefs]           = React.useState(DEFAULT_PLANS);
   const [planEditIdx, setPlanEditIdx]     = React.useState<number|null>(null);
   const [planEditVal, setPlanEditVal]     = React.useState<any>(null);
@@ -545,14 +428,14 @@ export function SuperAdminPage() {
   const stats  = useQuery(api.superadmin.platformStats);
   const audit  = useQuery(api.superadmin.listAuditLog, { limit:100 });
 
-  const createOrg      = useMutation(api.superadmin.createOrg);
+  const createOrg       = useMutation(api.superadmin.createOrg);
   const sendAdminInvite = useAction(api.superadmin.sendAdminInvite);
-  const updateOrg      = useMutation(api.superadmin.updateOrg);
-  const blockOrg       = useMutation(api.superadmin.blockOrg);
-  const unblockOrg     = useMutation(api.superadmin.unblockOrg);
-  const updatePlan     = useMutation(api.superadmin.updatePlan);
-  const updateFeatures = useMutation(api.superadmin.updateFeatures);
-  const deleteOrg      = useMutation(api.superadmin.deleteOrg);
+  const updateOrg       = useMutation(api.superadmin.updateOrg);
+  const blockOrg        = useMutation(api.superadmin.blockOrg);
+  const unblockOrg      = useMutation(api.superadmin.unblockOrg);
+  const updatePlan      = useMutation(api.superadmin.updatePlan);
+  const updateFeatures  = useMutation(api.superadmin.updateFeatures);
+  const deleteOrg       = useMutation(api.superadmin.deleteOrg);
 
   const actor = { actorClerkId: user?.id ?? "", actorName: user?.fullName ?? "Superadmin" };
 
@@ -567,17 +450,10 @@ export function SuperAdminPage() {
     setSubmitting(true);
     try {
       const orgId = await createOrg({...form,...actor});
-      await sendAdminInvite({
-        orgId,
-        orgName:    form.name,
-        adminName:  form.ownerName || form.ownerEmail,
-        adminEmail: form.ownerEmail,
-        ...actor,
-      });
+      await sendAdminInvite({ orgId, orgName:form.name, adminName:form.ownerName||form.ownerEmail, adminEmail:form.ownerEmail, ...actor });
       setCreateOpen(false);
       setForm(emptyForm);
-    }
-    finally { setSubmitting(false); }
+    } finally { setSubmitting(false); }
   };
 
   const handleEdit = async () => {
@@ -609,7 +485,7 @@ export function SuperAdminPage() {
     const pd = planEditVal as any;
     const feats: Record<string,boolean> = {};
     FEATURES.forEach(f => { feats[f.key] = !!pd.features?.[f.key]; });
-    if (planEditIdx! < planDefs.length) {
+    if (planEditIdx !== null && planEditIdx < planDefs.length) {
       setPlanDefs(d => d.map((p,i) => i===planEditIdx ? {...pd,features:feats} : p));
     } else {
       setPlanDefs(d => [...d, {...pd,features:feats}]);
@@ -635,19 +511,13 @@ export function SuperAdminPage() {
   return (
     <div style={{ display:"flex",height:"100vh",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",background:c.bg,color:c.text }}>
 
-      {/* ── SIDEBAR ────────────────────────────────────────────────────── */}
+      {/* ── SIDEBAR ── */}
       <aside className="sa-sidebar" style={{ width:232,flexShrink:0,background:c.surface,borderRight:"1px solid "+c.border,display:"flex",flexDirection:"column",height:"100vh",position:"sticky",top:0 }}>
-        <div style={{ padding:"20px 18px 16px",borderBottom:"1px solid "+c.border,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+        <div style={{ padding:"18px 16px 14px",borderBottom:"1px solid "+c.border }}>
           <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-            <div style={{ width:36,height:36,borderRadius:10,background:c.accent,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:18,color:"#fff" }}>P</div>
-            <div>
-              <div style={{ fontWeight:800,fontSize:16,color:c.text }}>Porta</div>
-              <div style={{ fontSize:9,fontWeight:700,letterSpacing:"0.12em",color:c.accent,textTransform:"uppercase" as const }}>Superadmin</div>
-            </div>
+            <img src="/Porta.png" alt="Porta" style={{ height:28,width:"auto" }}/>
+            <span style={{ fontSize:10,fontWeight:700,color:c.accent,background:c.accentBg,padding:"2px 8px",borderRadius:20,letterSpacing:".06em",textTransform:"uppercase" as const }}>Superadmin</span>
           </div>
-          <button onClick={toggle} title="Toggle theme" style={{ background:"none",border:"1px solid "+c.border,borderRadius:8,padding:"6px 7px",color:c.textSub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-            {theme==="dark" ? <IcoSun/> : <IcoMoon/>}
-          </button>
         </div>
 
         <nav style={{ padding:"10px",flex:1,overflowY:"auto" }}>
@@ -682,46 +552,46 @@ export function SuperAdminPage() {
       </aside>
 
       {/* ── MOBILE HEADER ── */}
-      <div className="sa-mobile-header" style={{display:"none",position:"fixed",top:0,left:0,right:0,height:56,background:c.surface,borderBottom:"1px solid "+c.border,alignItems:"center",justifyContent:"space-between",padding:"0 16px",zIndex:100}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <button onClick={()=>setMobileOpen(true)} style={{background:"none",border:"1px solid "+c.border,borderRadius:8,padding:"7px 8px",color:c.textSub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div className="sa-mobile-header" style={{ display:"none",position:"fixed",top:0,left:0,right:0,height:56,background:c.surface,borderBottom:"1px solid "+c.border,alignItems:"center",justifyContent:"space-between",padding:"0 16px",zIndex:100 }}>
+        <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+          <button onClick={()=>setMobileOpen(true)} style={{ background:"none",border:"1px solid "+c.border,borderRadius:8,padding:"7px 8px",color:c.textSub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:28,height:28,borderRadius:7,background:c.accent,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:14,color:"#fff"}}>P</div>
-            <span style={{fontWeight:800,fontSize:14,color:c.text}}>Porta <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",color:c.accent,textTransform:"uppercase"}}>Superadmin</span></span>
+          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+            <img src="/Porta.png" alt="Porta" style={{ width:28,height:28,borderRadius:7,objectFit:"contain" }}/>
+            <span style={{ fontWeight:800,fontSize:14,color:c.text }}>Porta <span style={{ fontSize:9,fontWeight:700,letterSpacing:"0.1em",color:c.accent,textTransform:"uppercase" as const }}>Superadmin</span></span>
           </div>
         </div>
-        <button onClick={toggle} style={{background:"none",border:"1px solid "+c.border,borderRadius:8,padding:"7px 8px",color:c.textSub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <button onClick={toggle} style={{ background:"none",border:"1px solid "+c.border,borderRadius:8,padding:"7px 8px",color:c.textSub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
           {theme==="dark" ? <IcoSun/> : <IcoMoon/>}
         </button>
       </div>
 
       {/* ── MOBILE DRAWER ── */}
-      {mobileOpen&&(
-        <div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
-          <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)"}} onClick={()=>setMobileOpen(false)}/>
-          <div style={{position:"relative",width:240,background:c.surface,borderRight:"1px solid "+c.border,display:"flex",flexDirection:"column",height:"100vh",overflowY:"auto",animation:"slideInSA .2s ease"}}>
+      {mobileOpen && (
+        <div style={{ position:"fixed",inset:0,zIndex:200,display:"flex" }}>
+          <div style={{ position:"absolute",inset:0,background:"rgba(0,0,0,0.55)" }} onClick={()=>setMobileOpen(false)}/>
+          <div style={{ position:"relative",width:240,background:c.surface,borderRight:"1px solid "+c.border,display:"flex",flexDirection:"column",height:"100vh",overflowY:"auto",animation:"slideInSA .2s ease" }}>
             <style>{`@keyframes slideInSA{from{transform:translateX(-100%)}to{transform:translateX(0)}}`}</style>
-            <div style={{padding:"18px 16px 14px",borderBottom:"1px solid "+c.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <div style={{width:32,height:32,borderRadius:9,background:c.accent,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:16,color:"#fff"}}>P</div>
+            <div style={{ padding:"18px 16px 14px",borderBottom:"1px solid "+c.border,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+              <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+                <img src="/Porta.png" alt="Porta" style={{ width:32,height:32,borderRadius:9,objectFit:"contain" }}/>
                 <div>
-                  <div style={{fontWeight:800,fontSize:14,color:c.text}}>Porta</div>
-                  <div style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",color:c.accent,textTransform:"uppercase"}}>Superadmin</div>
+                  <div style={{ fontWeight:800,fontSize:14,color:c.text }}>Porta</div>
+                  <div style={{ fontSize:9,fontWeight:700,letterSpacing:"0.1em",color:c.accent,textTransform:"uppercase" as const }}>Superadmin</div>
                 </div>
               </div>
-              <button onClick={()=>setMobileOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:c.textSub,fontSize:18,padding:"2px 6px"}}>✕</button>
+              <button onClick={()=>setMobileOpen(false)} style={{ background:"none",border:"none",cursor:"pointer",color:c.textSub,fontSize:18,padding:"2px 6px" }}>✕</button>
             </div>
-            <nav style={{padding:10,flex:1}}>
+            <nav style={{ padding:10,flex:1 }}>
               {NAV.map(n=>(
-                <button key={n.id} onClick={()=>{setTab(n.id);setMobileOpen(false);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",borderRadius:8,border:"none",background:tab===n.id?c.accentBg:"transparent",color:tab===n.id?c.accent:c.textSub,fontSize:13,fontWeight:tab===n.id?700:400,cursor:"pointer",textAlign:"left",marginBottom:2,fontFamily:"inherit"}}>
+                <button key={n.id} onClick={()=>{setTab(n.id);setMobileOpen(false);}} style={{ display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",borderRadius:8,border:"none",background:tab===n.id?c.accentBg:"transparent",color:tab===n.id?c.accent:c.textSub,fontSize:13,fontWeight:tab===n.id?700:400,cursor:"pointer",textAlign:"left" as const,marginBottom:2,fontFamily:"inherit" }}>
                   <n.Icon/><span>{n.label}</span>
                 </button>
               ))}
             </nav>
-            <div style={{padding:"12px 14px",borderTop:"1px solid "+c.border}}>
-              <button onClick={()=>signOut()} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+c.border,background:"transparent",color:c.textSub,fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>
+            <div style={{ padding:"12px 14px",borderTop:"1px solid "+c.border }}>
+              <button onClick={()=>signOut()} style={{ display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+c.border,background:"transparent",color:c.textSub,fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"inherit" }}>
                 <IcoLogout/>Sign out
               </button>
             </div>
@@ -729,20 +599,28 @@ export function SuperAdminPage() {
         </div>
       )}
 
-
-      {/* ── MAIN ───────────────────────────────────────────────────────── */}
+      {/* ── MAIN ── */}
       <main style={{ flex:1,overflow:"auto",paddingTop:0,minWidth:0,background:c.bg,display:"flex",flexDirection:"column" }}>
 
-        {/* OVERVIEW */}
+        {/* ── TOP HEADER ── */}
+        {/* ── TOP HEADER ── */}
+        <header style={{ display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"0 28px",borderBottom:"1px solid "+c.border,background:c.surface,height:56,flexShrink:0,gap:10 }}>
+          <span style={{ fontSize:13,fontWeight:600,color:c.text }}>{user?.fullName ?? "Superadmin"}</span>
+          <div style={{ width:1,height:22,background:c.border }}/>
+          <button onClick={toggle} style={{ background:"none",border:"1px solid "+c.border,borderRadius:8,padding:7,color:c.textSub,cursor:"pointer",display:"flex",alignItems:"center" }}>
+            {theme==="dark" ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}
+          </button>
+          <div style={{ width:32,height:32,borderRadius:"50%",background:c.accentBg,color:c.accent,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13 }}>{user?.firstName?.[0]?.toUpperCase() ?? "S"}</div>
+        </header>
         {tab==="overview" && (
           <div style={{ padding:"32px 36px" }}>
             <h1 style={{ fontSize:24,fontWeight:800,marginBottom:4,color:c.text }}>Platform overview</h1>
             <p style={{ fontSize:13,color:c.textSub,marginBottom:28 }}>Live metrics across all Porta organisations</p>
             <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14 }}>
-              <StatCard label="Total orgs"    value={stats?.totalOrgs??    "--"} sub="all time"           accent="#6366f1" c={c}/>
-              <StatCard label="Active"         value={stats?.activeOrgs??   "--"} sub="currently live"     accent={c.accent} c={c}/>
-              <StatCard label="Trial accounts"       value={stats?.trialOrgs??    "--"} sub="14-day window"      accent={c.info}   c={c}/>
-              <StatCard label="Blocked"        value={stats?.blockedOrgs??  "--"} sub="access suspended"   accent={c.danger} c={c}/>
+              <StatCard label="Total orgs"     value={stats?.totalOrgs??    "--"} sub="all time"           accent="#6366f1" c={c}/>
+              <StatCard label="Active"          value={stats?.activeOrgs??   "--"} sub="currently live"     accent={c.accent} c={c}/>
+              <StatCard label="Trial accounts"  value={stats?.trialOrgs??    "--"} sub="14-day window"      accent={c.info}   c={c}/>
+              <StatCard label="Blocked"         value={stats?.blockedOrgs??  "--"} sub="access suspended"   accent={c.danger} c={c}/>
             </div>
             <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:28 }}>
               <StatCard label="Pro accounts"   value={stats?.proOrgs??        "--"} sub="paid plan"          accent={c.accent}  c={c}/>
@@ -1080,10 +958,10 @@ export function SuperAdminPage() {
         {/* SETTINGS */}
         {tab==="settings" && <SettingsPanel user={user} c={c} />}
 
-        <div style={{textAlign:"center",padding:"12px 36px",fontSize:"12px",fontWeight:600,color:"#3fb950",letterSpacing:"0.04em",opacity:0.85}}>© {new Date().getFullYear()} Porta · Powered by Lider Technologies LTD</div>
+        <div style={{ textAlign:"center",padding:"12px 36px",fontSize:"12px",fontWeight:600,color:"#3fb950",letterSpacing:"0.04em",opacity:0.85 }}>© {new Date().getFullYear()} Porta · Powered by Lider Technologies LTD</div>
       </main>
 
-      {/* ── CREATE MODAL ───────────────────────────────────────────────── */}
+      {/* ── CREATE MODAL ── */}
       {createOpen && (
         <Modal title="Create new account" onClose={()=>setCreateOpen(false)} c={c} wide>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
@@ -1123,7 +1001,7 @@ export function SuperAdminPage() {
         </Modal>
       )}
 
-      {/* ── EDIT MODAL ─────────────────────────────────────────────────── */}
+      {/* ── EDIT MODAL ── */}
       {editOrg && (
         <Modal title={"Edit — "+editOrg.name} onClose={()=>setEditOrg(null)} c={c} wide>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
@@ -1155,7 +1033,7 @@ export function SuperAdminPage() {
         </Modal>
       )}
 
-      {/* ── PLAN EDIT MODAL ────────────────────────────────────────────── */}
+      {/* ── PLAN EDIT MODAL ── */}
       {planEditIdx!==null && planEditVal && (
         <Modal title={planEditIdx<planDefs.length ? "Edit plan — "+(planDefs[planEditIdx]?.name??"") : "New plan"} onClose={()=>{setPlanEditIdx(null);setPlanEditVal(null);}} c={c} wide>
           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
@@ -1200,7 +1078,7 @@ export function SuperAdminPage() {
         </Modal>
       )}
 
-      {/* ── BLOCK MODAL ────────────────────────────────────────────────── */}
+      {/* ── BLOCK MODAL ── */}
       {blockModal && (
         <Modal title={blockModal.status==="blocked"?"Unblock organisation":"Block organisation"} onClose={()=>{setBlockModal(null);setBlockReason("");}} c={c}>
           <div style={{ fontSize:15,fontWeight:700,marginBottom:14,color:c.text }}>{blockModal.name}</div>
@@ -1217,7 +1095,7 @@ export function SuperAdminPage() {
         </Modal>
       )}
 
-      {/* ── DELETE MODAL ───────────────────────────────────────────────── */}
+      {/* ── DELETE MODAL ── */}
       {deleteConfirm && (
         <Modal title="Delete organisation" onClose={()=>setDeleteConfirm(null)} c={c}>
           <div style={{ fontSize:15,fontWeight:700,marginBottom:12,color:c.text }}>{deleteConfirm.name}</div>
@@ -1234,3 +1112,5 @@ export function SuperAdminPage() {
     </div>
   );
 }
+
+
