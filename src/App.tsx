@@ -11,6 +11,7 @@ function CustomLogin() {
   const [step, setStep]         = useState<"creds"|"mfa">("creds");
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
+  const [showPw, setShowPw]     = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +67,10 @@ function CustomLogin() {
         .sa-form { display: flex; flex-direction: column; gap: 18px; }
         .sa-field { display: flex; flex-direction: column; gap: 6px; }
         .sa-label { font-size: 0.78rem; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: .05em; }
+        .pw-wrap { position: relative; }
+        .pw-wrap .sa-input { width: 100%; padding-right: 42px; }
+        .pw-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #8b949e; display: flex; align-items: center; padding: 0; }
+        .pw-eye:hover { color: #e6edf3; }
         .sa-input { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 11px 14px; font-size: 0.9rem; color: #e6edf3; font-family: inherit; outline: none; transition: border-color .15s; width: 100%; }
         .sa-input:focus { border-color: #3fb950; }
         .sa-input::placeholder { color: #484f58; }
@@ -97,7 +102,7 @@ function CustomLogin() {
                 </div>
                 <div className="sa-field">
                   <label className="sa-label">Password</label>
-                  <input className="sa-input" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required autoComplete="current-password" />
+                  <div className="pw-wrap"><input className="sa-input" type={showPw ? "text" : "password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required autoComplete="current-password" /><button type="button" className="pw-eye" onClick={()=>setShowPw(p=>!p)} tabIndex={-1}>{showPw ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
                 </div>
                 {error && <div className="sa-error">{error}</div>}
                 <button type="submit" className="sa-btn" disabled={loading || !isLoaded}>{loading ? "Signing in..." : "Sign in"}</button>
@@ -121,7 +126,7 @@ function CustomLogin() {
             </>
           )}
         </div>
-      <div style={{textAlign:"center",padding:"12px 24px",fontSize:"12px",fontWeight:600,color:"#3fb950",letterSpacing:"0.04em",opacity:0.85,marginTop:"16px"}}>© {new Date().getFullYear()} Porta · Powered by Lider Technologies LTD</div>
+      <div style={{textAlign:"center",padding:"12px 24px",fontSize:"12px",fontWeight:600,color:"#3fb950",letterSpacing:"0.04em",opacity:0.85,position:"fixed",bottom:0,left:0,right:0,background:"#0d1117"}}>© {new Date().getFullYear()} Porta · Powered by Lider Technologies LTD</div>
       </div>
     </>
   );
@@ -167,6 +172,8 @@ const router = createBrowserRouter([
 export default function App() {
   return <RouterProvider router={router} />;
 }
+
+
 
 
 

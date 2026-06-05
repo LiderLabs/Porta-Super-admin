@@ -98,7 +98,7 @@ function useTheme() {
 // ─── Shared UI components ─────────────────────────────────────────────────────
 function Toggle({ on, onChange, c }: { on: boolean; onChange: () => void; c: Record<string,string> }) {
   return (
-    <button onClick={onChange} role="switch" aria-checked={on} style={{ width:36,height:20,borderRadius:10,border:"none",background:on?c.accent:c.border,position:"relative",cursor:"pointer",transition:"background .2s",flexShrink:0 }}>
+    <button onClick={e => { e.stopPropagation(); onChange(); }} role="switch" aria-checked={on} style={{ width:36,height:20,borderRadius:10,border:"none",background:on?c.accent:c.border,position:"relative",cursor:"pointer",transition:"background .2s",flexShrink:0 }}>
       <span style={{ position:"absolute",top:2,left:on?18:2,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .18s",display:"block",boxShadow:"0 1px 3px rgba(0,0,0,.3)" }}/>
     </button>
   );
@@ -451,9 +451,8 @@ export function SuperAdminPage() {
     try {
       const orgId = await createOrg({...form,...actor});
       await sendAdminInvite({ orgId, orgName:form.name, adminName:form.ownerName||form.ownerEmail, adminEmail:form.ownerEmail, ...actor });
-      setCreateOpen(false);
-      setForm(emptyForm);
-    } finally { setSubmitting(false); }
+    } catch(err) { console.error(err); }
+    finally { setCreateOpen(false); setForm(emptyForm); setSubmitting(false); }
   };
 
   const handleEdit = async () => {
