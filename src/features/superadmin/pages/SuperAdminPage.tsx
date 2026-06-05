@@ -106,7 +106,7 @@ function Toggle({ on, onChange, c }: { on: boolean; onChange: () => void; c: Rec
 
 function StatCard({ label, value, sub, accent, c }: { label:string; value:string|number; sub:string; accent:string; c:Record<string,string> }) {
   return (
-    <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:14,padding:"22px 24px",borderTop:"3px solid "+accent,display:"flex",flexDirection:"column",gap:6 }}>
+    <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:14,padding:"22px 24px",display:"flex",flexDirection:"column",gap:6 }}>
       <div style={{ fontSize:10,fontWeight:700,color:c.textMute,textTransform:"uppercase" as const,letterSpacing:"0.1em" }}>{label}</div>
       <div style={{ fontSize:32,fontWeight:800,color:c.text,lineHeight:1 }}>{value}</div>
       <div style={{ fontSize:12,color:c.textSub }}>{sub}</div>
