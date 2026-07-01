@@ -520,7 +520,7 @@ export function SuperAdminPage() {
           .sa-modal-grid { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 480px) {
-          .sa-stats-grid { grid-template-columns: 1fr !important; }
+          .sa-stats-grid { gap: 10px !important; }
           .sa-page-pad { padding: 20px 16px !important; }
         }
       `}</style>
