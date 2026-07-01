@@ -509,6 +509,21 @@ export function SuperAdminPage() {
 
   return (
     <div style={{ display:"flex",height:"100vh",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",background:c.bg,color:c.text }}>
+      <style>{`
+        @media (max-width: 900px) {
+          .sa-charts-grid { grid-template-columns: 1fr !important; }
+          .sa-sidebar { display: none !important; }
+          .sa-mobile-header { display: flex !important; }
+        }
+        @media (max-width: 700px) {
+          .sa-stats-grid { grid-template-columns: repeat(2,1fr) !important; }
+          .sa-modal-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 480px) {
+          .sa-stats-grid { grid-template-columns: 1fr !important; }
+          .sa-page-pad { padding: 20px 16px !important; }
+        }
+      `}</style>
 
       {/* ── SIDEBAR ── */}
       <aside className="sa-sidebar" style={{ width:232,flexShrink:0,background:c.surface,borderRight:"1px solid "+c.border,display:"flex",flexDirection:"column",height:"100vh",position:"sticky",top:0 }}>
@@ -612,22 +627,22 @@ export function SuperAdminPage() {
           <div style={{ width:32,height:32,borderRadius:"50%",background:c.accentBg,color:c.accent,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13 }}>{user?.firstName?.[0]?.toUpperCase() ?? "S"}</div>
         </header>
         {tab==="overview" && (
-          <div style={{ padding:"32px 36px" }}>
+          <div className="sa-page-pad" style={{ padding:"32px 36px" }}>
             <h1 style={{ fontSize:24,fontWeight:800,marginBottom:4,color:c.text }}>Platform overview</h1>
             <p style={{ fontSize:13,color:c.textSub,marginBottom:28 }}>Live metrics across all Porta organisations</p>
-            <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14 }}>
+            <div className="sa-stats-grid" style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14 }}>
               <StatCard label="Total orgs"     value={stats?.totalOrgs??    "--"} sub="all time"           accent="#6366f1" c={c}/>
               <StatCard label="Active"          value={stats?.activeOrgs??   "--"} sub="currently live"     accent={c.accent} c={c}/>
               <StatCard label="Trial accounts"  value={stats?.trialOrgs??    "--"} sub="14-day window"      accent={c.info}   c={c}/>
               <StatCard label="Blocked"         value={stats?.blockedOrgs??  "--"} sub="access suspended"   accent={c.danger} c={c}/>
             </div>
-            <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:28 }}>
+            <div className="sa-stats-grid" style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:28 }}>
               <StatCard label="Pro accounts"   value={stats?.proOrgs??        "--"} sub="paid plan"          accent={c.accent}  c={c}/>
               <StatCard label="Enterprise"     value={stats?.enterpriseOrgs?? "--"} sub="enterprise plan"    accent={c.warn}    c={c}/>
               <StatCard label="Total visitors" value={stats?.totalVisitors??  "--"} sub="all-time check-ins" accent={c.purple}  c={c}/>
               <StatCard label="Visitors (7d)"  value={stats?.weekVisitors??   "--"} sub="this week"          accent="#fb7185"   c={c}/>
             </div>
-            <div style={{ display:"grid",gridTemplateColumns:"280px 1fr",gap:18,marginBottom:20 }}>
+            <div className="sa-charts-grid" style={{ display:"grid",gridTemplateColumns:"280px 1fr",gap:18,marginBottom:20 }}>
               <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:14,padding:"22px 24px" }}>
                 <div style={{ fontSize:13,fontWeight:700,marginBottom:20,color:c.text }}>Accounts by plan</div>
                 {stats && [
@@ -690,7 +705,7 @@ export function SuperAdminPage() {
 
         {/* ACCOUNTS */}
         {tab==="accounts" && (
-          <div style={{ padding:"32px 36px" }}>
+          <div className="sa-page-pad" style={{ padding:"32px 36px" }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24 }}>
               <div>
                 <h1 style={{ fontSize:24,fontWeight:800,marginBottom:4,color:c.text }}>Accounts</h1>
@@ -721,8 +736,8 @@ export function SuperAdminPage() {
                 ))}
               </div>
             </div>
-            <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:14,overflow:"hidden" }}>
-              <table style={{ width:"100%",borderCollapse:"collapse" }}>
+            <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:14,overflow:"auto" }}>
+              <table style={{ width:"100%",borderCollapse:"collapse",minWidth:900 }}>
                 <thead>
                   <tr style={{ borderBottom:"1px solid "+c.border }}>
                     {["Organisation","Plan","Status","Owner","User Limit","ID Required","Created","Actions"].map(h=>(
@@ -799,7 +814,7 @@ export function SuperAdminPage() {
 
         {/* PLANS & PRICING */}
         {tab==="plans" && (
-          <div style={{ padding:"32px 36px" }}>
+          <div className="sa-page-pad" style={{ padding:"32px 36px" }}>
             <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24 }}>
               <div>
                 <h1 style={{ fontSize:24,fontWeight:800,marginBottom:4,color:c.text }}>Plans & Pricing</h1>
@@ -892,7 +907,7 @@ export function SuperAdminPage() {
 
         {/* FEATURE FLAGS */}
         {tab==="features" && (
-          <div style={{ padding:"32px 36px" }}>
+          <div className="sa-page-pad" style={{ padding:"32px 36px" }}>
             <h1 style={{ fontSize:24,fontWeight:800,marginBottom:4,color:c.text }}>Feature flags</h1>
             <p style={{ fontSize:13,color:c.textSub,marginBottom:24 }}>Override features per organisation. Changes apply instantly.</p>
             <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:14,overflow:"auto" }}>
@@ -919,11 +934,11 @@ export function SuperAdminPage() {
 
         {/* AUDIT LOG */}
         {tab==="audit" && (
-          <div style={{ padding:"32px 36px" }}>
+          <div className="sa-page-pad" style={{ padding:"32px 36px" }}>
             <h1 style={{ fontSize:24,fontWeight:800,marginBottom:4,color:c.text }}>Audit log</h1>
             <p style={{ fontSize:13,color:c.textSub,marginBottom:24 }}>Every superadmin action, newest first</p>
-            <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:14,overflow:"hidden" }}>
-              <table style={{ width:"100%",borderCollapse:"collapse" }}>
+            <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:14,overflow:"auto" }}>
+              <table style={{ width:"100%",borderCollapse:"collapse",minWidth:700 }}>
                 <thead>
                   <tr style={{ borderBottom:"1px solid "+c.border }}>
                     {["Action","Target","Detail","By","When"].map(h=><th key={h} style={th}>{h}</th>)}
@@ -963,7 +978,7 @@ export function SuperAdminPage() {
       {/* ── CREATE MODAL ── */}
       {createOpen && (
         <Modal title="Create new account" onClose={()=>setCreateOpen(false)} c={c} wide>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
+          <div className="sa-modal-grid" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
             <div style={{ gridColumn:"1/-1" }}><Field label="Organisation logo" c={c}><LogoUploader current={form.logoUrl} onUpload={url=>setForm(f=>({...f,logoUrl:url}))} c={c}/></Field></div>
             <Field label="Organisation name" required c={c}><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Acme Corp" style={inp(c)}/></Field>
             <Field label="URL handle" required c={c}><input value={form.slug} onChange={e=>setForm(f=>({...f,slug:e.target.value.toLowerCase().replace(/\s+/g,"-")}))} placeholder="acme-corp" style={inp(c)}/></Field>
@@ -1003,7 +1018,7 @@ export function SuperAdminPage() {
       {/* ── EDIT MODAL ── */}
       {editOrg && (
         <Modal title={"Edit — "+editOrg.name} onClose={()=>setEditOrg(null)} c={c} wide>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
+          <div className="sa-modal-grid" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
             <div style={{ gridColumn:"1/-1" }}><Field label="Logo" c={c}><LogoUploader current={editForm.logoUrl} onUpload={url=>setEditForm((f:any)=>({...f,logoUrl:url}))} c={c}/></Field></div>
             <Field label="Organisation name" required c={c}><input value={editForm.name} onChange={e=>setEditForm((f:any)=>({...f,name:e.target.value}))} style={inp(c)}/></Field>
             <Field label="URL Handle" c={c}><input value={editForm.slug} onChange={e=>setEditForm((f:any)=>({...f,slug:e.target.value}))} style={inp(c)}/></Field>
@@ -1035,7 +1050,7 @@ export function SuperAdminPage() {
       {/* ── PLAN EDIT MODAL ── */}
       {planEditIdx!==null && planEditVal && (
         <Modal title={planEditIdx<planDefs.length ? "Edit plan — "+(planDefs[planEditIdx]?.name??"") : "New plan"} onClose={()=>{setPlanEditIdx(null);setPlanEditVal(null);}} c={c} wide>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
+          <div className="sa-modal-grid" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
             <div style={{ gridColumn:"1/-1" }}><Field label="Plan name" required c={c}><input value={planEditVal.name} onChange={e=>setPlanEditVal((p:any)=>({...p,name:e.target.value}))} style={inp(c)}/></Field></div>
             <div style={{ gridColumn:"1/-1" }}><Field label="Description" c={c}><input value={planEditVal.desc} onChange={e=>setPlanEditVal((p:any)=>({...p,desc:e.target.value}))} style={inp(c)}/></Field></div>
             <Field label="Monthly price ($)" c={c}><input type="number" value={planEditVal.price} onChange={e=>setPlanEditVal((p:any)=>({...p,price:+e.target.value}))} style={inp(c)}/></Field>
@@ -1111,5 +1126,6 @@ export function SuperAdminPage() {
     </div>
   );
 }
+
 
 
