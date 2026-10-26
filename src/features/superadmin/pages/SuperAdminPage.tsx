@@ -9,6 +9,24 @@ type Theme = "dark" | "light";
 type Tab = "overview" | "accounts" | "plans" | "features" | "audit" | "settings";
 type Plan = "free" | "pro" | "enterprise" | "custom";
 type OrgStatus = "active" | "trial" | "blocked" | "suspended";
+type Notify = (type: "error" | "warn" | "ok", text: string) => void;
+
+// Plans the backend accepts on an organisation (matches the organizations.plan union).
+const ASSIGNABLE_PLANS = ["free", "pro", "enterprise", "custom"];
+
+// Pull a readable message out of a Convex error (ConvexError data, or the "Uncaught Error: ..." wrapper).
+function errMsg(err: unknown): string {
+  const e = err as any;
+  if (typeof e?.data === "string") return e.data;
+  const raw = String(e?.message ?? err ?? "Something went wrong");
+  const m = raw.match(/Uncaught (?:Convex)?Error:\s*([^\n]*?)(?:\s+at\s+\S+.*)?$/m);
+  const msg = (m?.[1] ?? raw).trim();
+  return /Server Error\s*$/i.test(msg) ? "The server rejected this action. Check the Convex logs." : msg;
+}
+
+// Typing-friendly slug clean-up, and the strict version used on submit (backend: lowercase, a-z 0-9, single dashes).
+const slugLive  = (s: string) => s.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-");
+const slugFinal = (s: string) => slugLive(s).replace(/^-+|-+$/g, "");
 
 // ─── Theme tokens ─────────────────────────────────────────────────────────────
 const T: Record<Theme, Record<string, string>> = {
@@ -177,9 +195,13 @@ function FeatureRow({ org, onSave, c }: { org:any; onSave:(f:any)=>Promise<void>
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
   const dirty = JSON.stringify(feats) !== JSON.stringify(org.features);
+  // Re-sync when the server copy changes (e.g. after "Reset all feature flags" or a plan change).
+  const serverFeats = JSON.stringify(org.features);
+  React.useEffect(() => { setFeats({ ...org.features }); }, [serverFeats]);
   const save = async () => {
     setSaving(true);
     try { await onSave(feats); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+    catch { /* the parent has already shown the error */ }
     finally { setSaving(false); }
   };
   return (
@@ -223,7 +245,7 @@ function BookingRuleRow({ label, desc, on, onChange, c }: { label:string; desc:s
 }
 
 // ─── Settings Panel ───────────────────────────────────────────────────────────
-function SettingsPanel({ user, c }: { user: any; c: Record<string,string> }) {
+function SettingsPanel({ user, c, notify }: { user: any; c: Record<string,string>; notify: Notify }) {
   const ps           = useQuery(api.superadmin.getPlatformSettings);
   const saveSettings = useMutation(api.superadmin.savePlatformSettings);
   const clearAudit   = useMutation(api.superadmin.clearAuditLog);
@@ -243,6 +265,10 @@ function SettingsPanel({ user, c }: { user: any; c: Record<string,string> }) {
 
   const handleSave = async () => {
     if (!form) return;
+    // Mirror the backend limits so the person gets a clear message before the round trip.
+    if (!Number.isInteger(form.trialDays) || form.trialDays < 1 || form.trialDays > 365) return notify("error", "Trial period must be 1 to 365 days.");
+    if (form.annualDiscount < 0 || form.annualDiscount > 100) return notify("error", "Annual discount must be 0 to 100.");
+    if (!Number.isInteger(form.gracePeriodDays) || form.gracePeriodDays < 0 || form.gracePeriodDays > 90) return notify("error", "Grace period must be 0 to 90 days.");
     setSaving(true);
     try {
       await saveSettings({
@@ -263,17 +289,31 @@ function SettingsPanel({ user, c }: { user: any; c: Record<string,string> }) {
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-    } finally { setSaving(false); }
+    } catch (err) { notify("error", errMsg(err)); }
+    finally { setSaving(false); }
   };
 
   const handleDanger = async () => {
     setDangerLoading(true);
     try {
       const actor = { actorClerkId: user?.id ?? "", actorName: user?.fullName ?? "Superadmin" };
-      if (dangerModal === "clear_audit") await clearAudit(actor);
-      if (dangerModal === "reset_flags") await resetFlags(actor);
+      if (dangerModal === "clear_audit") {
+        // The backend clears in batches of 2,000 and reports more: true while entries remain.
+        let total = 0;
+        for (let i = 0; i < 50; i++) {
+          const res: any = await clearAudit(actor);
+          total += res?.deleted ?? 0;
+          if (!res?.more) break;
+        }
+        notify("ok", `Audit log cleared (${total} entries removed).`);
+      }
+      if (dangerModal === "reset_flags") {
+        await resetFlags(actor);
+        notify("ok", "Feature flags reset to each organisation's plan defaults.");
+      }
       setDangerModal(null);
-    } finally { setDangerLoading(false); }
+    } catch (err) { notify("error", errMsg(err)); }
+    finally { setDangerLoading(false); }
   };
 
   const sinp = (w?: number): React.CSSProperties => ({
@@ -336,8 +376,8 @@ function SettingsPanel({ user, c }: { user: any; c: Record<string,string> }) {
       <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:12,overflow:"hidden",marginBottom:4 }}>
         <SettingRow label="Platform name" desc="Name shown across the platform and in emails" node={<input value={form.platformName ?? ""} onChange={e => set("platformName", e.target.value)} style={sinp()} placeholder="Porta"/>}/>
         <SettingRow label="Support email" desc="Contact email shown to users needing help" node={<input value={form.supportEmail ?? ""} onChange={e => set("supportEmail", e.target.value)} style={sinp()} placeholder="support@porta.com"/>}/>
-        <SettingRow label="Trial period" desc="Days new accounts get before needing a paid plan" node={<div style={{ display:"flex",alignItems:"center",gap:8 }}><input type="number" min={0} max={365} value={form.trialDays} onChange={e => set("trialDays", Number(e.target.value))} style={sinp(72)}/><span style={{ fontSize:12,color:c.textSub }}>days</span></div>}/>
-        <SettingRow label="Self-serve signups" desc="Allow organisations to sign up without superadmin approval" node={tog(form.selfServeSignups, "selfServeSignups")}/>
+        <SettingRow label="Trial period" desc="Days new accounts get before needing a paid plan" node={<div style={{ display:"flex",alignItems:"center",gap:8 }}><input type="number" min={1} max={365} value={form.trialDays} onChange={e => set("trialDays", Number(e.target.value))} style={sinp(72)}/><span style={{ fontSize:12,color:c.textSub }}>days</span></div>}/>
+        <SettingRow label="Self-serve signups" desc="Allow organisations to sign up without superadmin approval (saved, not enforced yet)" node={tog(form.selfServeSignups, "selfServeSignups")}/>
         <SettingRow last label="Default plan" desc="Plan assigned to new organisations on signup" node={<select value={form.defaultPlan} onChange={e => set("defaultPlan", e.target.value)} style={sinp()}><option value="free">Free</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option><option value="custom">Custom</option></select>}/>
       </div>
 
@@ -346,14 +386,14 @@ function SettingsPanel({ user, c }: { user: any; c: Record<string,string> }) {
         <SettingRow label="Require email verification" desc="Users must verify their email before accessing the platform" node={tog(form.requireEmailVerify, "requireEmailVerify")}/>
         <SettingRow label="API key access" desc="Minimum plan required to generate REST API keys" node={<select value={form.apiAccessTier} onChange={e => set("apiAccessTier", e.target.value)} style={sinp()}><option value="free">All plans</option><option value="pro">Pro+</option><option value="enterprise">Enterprise only</option></select>}/>
         <SettingRow label="SSO enforcement" desc="How single sign-on is handled for Enterprise accounts" node={<select value={form.ssoEnforcement} onChange={e => set("ssoEnforcement", e.target.value)} style={sinp()}><option value="optional">Optional</option><option value="required">Required</option><option value="disabled">Disabled</option></select>}/>
-        <SettingRow last label="Maintenance mode" desc="Lock the platform to read-only for all organisations" node={tog(form.maintenanceMode ?? false, "maintenanceMode")}/>
+        <SettingRow last label="Maintenance mode" desc="Lock the platform to read-only for all organisations (saved, not enforced yet)" node={tog(form.maintenanceMode ?? false, "maintenanceMode")}/>
       </div>
 
       <SectionLabel label="Billing" />
       <div style={{ background:c.surface,border:"1px solid "+c.border,borderRadius:12,overflow:"hidden",marginBottom:28 }}>
         <SettingRow label="Default currency" desc="Currency used for all plan pricing and invoices" node={<select value={form.currency} onChange={e => set("currency", e.target.value)} style={sinp()}>{["USD","GBP","EUR","GHS","NGN","KES","ZAR"].map(cur => (<option key={cur} value={cur}>{cur}</option>))}</select>}/>
         <SettingRow label="Annual billing discount" desc="Percentage discount applied when organisations choose annual billing" node={<div style={{ display:"flex",alignItems:"center",gap:8 }}><input type="number" min={0} max={100} value={form.annualDiscount} onChange={e => set("annualDiscount", Number(e.target.value))} style={sinp(72)}/><span style={{ fontSize:12,color:c.textSub }}>%</span></div>}/>
-        <SettingRow last label="Grace period" desc="Days before blocking an organisation after a failed payment" node={<div style={{ display:"flex",alignItems:"center",gap:8 }}><input type="number" min={0} max={90} value={form.gracePeriodDays} onChange={e => set("gracePeriodDays", Number(e.target.value))} style={sinp(72)}/><span style={{ fontSize:12,color:c.textSub }}>days</span></div>}/>
+        <SettingRow last label="Grace period" desc="Days before blocking an organisation after a failed payment (saved, not enforced yet)" node={<div style={{ display:"flex",alignItems:"center",gap:8 }}><input type="number" min={0} max={90} value={form.gracePeriodDays} onChange={e => set("gracePeriodDays", Number(e.target.value))} style={sinp(72)}/><span style={{ fontSize:12,color:c.textSub }}>days</span></div>}/>
       </div>
 
       <div style={{ background:c.dangerBg,border:"1px solid rgba(248,81,73,0.2)",borderRadius:12,padding:"20px 22px" }}>
@@ -371,7 +411,7 @@ function SettingsPanel({ user, c }: { user: any; c: Record<string,string> }) {
             <div style={{ fontSize:18,fontWeight:700,color:c.danger,marginBottom:10 }}>Are you sure?</div>
             <div style={{ fontSize:13,color:c.textSub,marginBottom:24,lineHeight:1.6 }}>
               {dangerModal === "clear_audit" && "This will permanently delete all audit log entries. This cannot be undone."}
-              {dangerModal === "reset_flags" && "This will reset feature flags to their defaults for every organisation on the platform. This cannot be undone."}
+              {dangerModal === "reset_flags" && "This will reset every organisation's feature flags to its plan's defaults. Custom per-organisation overrides will be lost. This cannot be undone."}
             </div>
             <div style={{ display:"flex",gap:10,justifyContent:"flex-end" }}>
               <button onClick={() => setDangerModal(null)} style={{ padding:"9px 18px",background:"transparent",border:"1px solid "+c.border,borderRadius:8,color:c.textSub,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>Cancel</button>
@@ -407,6 +447,15 @@ export function SuperAdminPage() {
   const [planDefs, setPlanDefs]           = React.useState(DEFAULT_PLANS);
   const [planEditIdx, setPlanEditIdx]     = React.useState<number|null>(null);
   const [planEditVal, setPlanEditVal]     = React.useState<any>(null);
+  const [notice, setNotice]               = React.useState<{type:"error"|"warn"|"ok"; text:string}|null>(null);
+  const noticeTimer = React.useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
+  const notify: Notify = (type, text) => {
+    setNotice({ type, text });
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNotice(null), type === "ok" ? 4000 : 9000);
+  };
+  const platformSettings = useQuery(api.superadmin.getPlatformSettings);
+  const trialDays = platformSettings?.trialDays ?? 14;
 
   React.useEffect(() => {
     if (savedPlans && savedPlans.length > 0) {
@@ -436,6 +485,7 @@ export function SuperAdminPage() {
   const updatePlan      = useMutation(api.superadmin.updatePlan);
   const updateFeatures  = useMutation(api.superadmin.updateFeatures);
   const deleteOrg       = useMutation(api.superadmin.deleteOrg);
+  const deletePlanDef   = useMutation(api.superadmin.deletePlanDefinition);
 
   const actor = { actorClerkId: user?.id ?? "", actorName: user?.fullName ?? "Superadmin" };
 
@@ -446,19 +496,35 @@ export function SuperAdminPage() {
   });
 
   const handleCreate = async () => {
-    if (!form.name||!form.slug||!form.ownerEmail) return;
+    const slug = slugFinal(form.slug);
+    if (!form.name||!slug||!form.ownerEmail) return;
     setSubmitting(true);
+    let orgId: any;
     try {
-      const orgId = await createOrg({...form,...actor});
+      orgId = await createOrg({...form,slug,...actor});
+    } catch(err) {
+      // Keep the form open so nothing typed is lost (slug clash, bad slug, etc.).
+      notify("error", errMsg(err));
+      setSubmitting(false);
+      return;
+    }
+    try {
       await sendAdminInvite({ orgId, orgName:form.name, adminName:form.ownerName||form.ownerEmail, adminEmail:form.ownerEmail, ...actor });
-    } catch(err) { console.error(err); }
-    finally { setCreateOpen(false); setForm(emptyForm); setSubmitting(false); }
+      notify("ok", `${form.name} created and invite sent to ${form.ownerEmail}.`);
+    } catch(err) {
+      notify("warn", `${form.name} was created, but the admin invite failed: ${errMsg(err)}`);
+    }
+    setCreateOpen(false); setForm(emptyForm); setSubmitting(false);
   };
 
   const handleEdit = async () => {
     if (!editOrg) return;
     setSubmitting(true);
-    try { await updateOrg({orgId:editOrg._id,...editForm,...actor}); setEditOrg(null); }
+    try {
+      const payload = { ...editForm, ...(editForm.slug !== undefined ? { slug: slugFinal(editForm.slug) } : {}) };
+      await updateOrg({orgId:editOrg._id,...payload,...actor});
+      setEditOrg(null);
+    } catch (err) { notify("error", errMsg(err)); }
     finally { setSubmitting(false); }
   };
 
@@ -466,19 +532,38 @@ export function SuperAdminPage() {
     if (!blockModal) return;
     setSubmitting(true);
     try {
-      blockModal.status==="blocked"
+      isLocked(blockModal)
         ? await unblockOrg({orgId:blockModal._id,...actor})
         : await blockOrg({orgId:blockModal._id,reason:blockReason||undefined,...actor});
       setBlockModal(null); setBlockReason("");
-    } finally { setSubmitting(false); }
+    } catch (err) { notify("error", errMsg(err)); }
+    finally { setSubmitting(false); }
   };
 
   const handleDelete = async () => {
     if (!deleteConfirm) return;
     setSubmitting(true);
     try { await deleteOrg({orgId:deleteConfirm._id,...actor}); setDeleteConfirm(null); }
+    catch (err) { notify("error", errMsg(err)); }
     finally { setSubmitting(false); }
   };
+
+  const handlePlanChange = async (orgId: any, plan: string) => {
+    try { await updatePlan({orgId,plan:plan as Plan,...actor}); }
+    catch (err) { notify("error", errMsg(err)); }
+  };
+
+  const handleDeletePlan = async (idx: number) => {
+    const id = planDefs[idx]?.id;
+    setPlanDefs(d=>d.filter((_,i)=>i!==idx));
+    setPlanEditIdx(null); setPlanEditVal(null);
+    if (!id) return;
+    try { await deletePlanDef({planId:id,...actor}); }
+    catch (err) { notify("error", errMsg(err)); }
+  };
+
+  // A blocked or suspended organisation is locked out; both can be released with Unblock.
+  const isLocked = (o: any) => o?.status === "blocked" || o?.status === "suspended";
 
   const savePlanEdit = () => {
     const pd = planEditVal as any;
@@ -489,7 +574,7 @@ export function SuperAdminPage() {
     } else {
       setPlanDefs(d => [...d, {...pd,features:feats}]);
     }
-    upsertPlan({ planId:(pd.id??pd.name??"plan").toLowerCase().replace(/\s+/g,"-"), name:pd.name??"", desc:pd.desc??"", price:Number(pd.price)||0, annualPrice:Number(pd.annualPrice)||0, maxUsers:Number(pd.maxUsers)||0, maxLocations:Number(pd.maxLocations)||0, color:pd.color??"#22c55e", features:feats, ...actor }).catch(console.error);
+    upsertPlan({ planId:(pd.id??pd.name??"plan").toLowerCase().replace(/\s+/g,"-"), name:pd.name??"", desc:pd.desc??"", price:Number(pd.price)||0, annualPrice:Number(pd.annualPrice)||0, maxUsers:Number(pd.maxUsers)||0, maxLocations:Number(pd.maxLocations)||0, color:pd.color??"#22c55e", features:feats, ...actor }).catch(err => notify("error", errMsg(err)));
     setPlanEditIdx(null); setPlanEditVal(null);
   };
 
@@ -616,7 +701,14 @@ export function SuperAdminPage() {
       {/* ── MAIN ── */}
       <main style={{ flex:1,overflow:"auto",paddingTop:0,minWidth:0,background:c.bg,display:"flex",flexDirection:"column" }}>
 
-        {/* ── TOP HEADER ── */}
+        {/* ── NOTICE ── */}
+        {notice && (
+          <div role="alert" style={{ position:"fixed",top:68,right:20,zIndex:3000,maxWidth:420,display:"flex",gap:12,alignItems:"flex-start",padding:"12px 14px",borderRadius:10,fontSize:13,lineHeight:1.45,boxShadow:"0 12px 40px rgba(0,0,0,.35)",background:c.surface,color:c.text,border:"1px solid "+(notice.type==="error"?c.danger:notice.type==="warn"?c.warn:c.accent) }}>
+            <span style={{ flex:1 }}>{notice.text}</span>
+            <button onClick={()=>setNotice(null)} aria-label="Dismiss" style={{ background:"none",border:"none",color:c.textSub,cursor:"pointer",display:"flex",padding:2 }}><IcoClose/></button>
+          </div>
+        )}
+
         {/* ── TOP HEADER ── */}
         <header style={{ display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"0 28px",borderBottom:"1px solid "+c.border,background:c.surface,height:56,flexShrink:0,gap:10 }}>
           <span style={{ fontSize:13,fontWeight:600,color:c.text }}>{user?.fullName ?? "Superadmin"}</span>
@@ -633,7 +725,7 @@ export function SuperAdminPage() {
             <div className="sa-stats-grid" style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:14 }}>
               <StatCard label="Total orgs"     value={stats?.totalOrgs??    "--"} sub="all time"           accent="#6366f1" c={c}/>
               <StatCard label="Active"          value={stats?.activeOrgs??   "--"} sub="currently live"     accent={c.accent} c={c}/>
-              <StatCard label="Trial accounts"  value={stats?.trialOrgs??    "--"} sub="14-day window"      accent={c.info}   c={c}/>
+              <StatCard label="Trial accounts"  value={stats?.trialOrgs??    "--"} sub={trialDays+"-day window"} accent={c.info}   c={c}/>
               <StatCard label="Blocked"         value={stats?.blockedOrgs??  "--"} sub="access suspended"   accent={c.danger} c={c}/>
             </div>
             <div className="sa-stats-grid" style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:28 }}>
@@ -766,8 +858,8 @@ export function SuperAdminPage() {
                           </div>
                         </td>
                         <td style={{ padding:"13px 14px" }}>
-                          <select value={o.plan} onChange={e=>updatePlan({orgId:o._id,plan:e.target.value as Plan,...actor})} style={{ padding:"4px 10px",borderRadius:20,border:"1px solid "+c.border,background:c.surfaceEl,color:planColor[o.plan]||c.textSub,fontSize:12,fontWeight:700,cursor:"pointer",outline:"none",fontFamily:"inherit" }}>
-                            {planDefs.map(pp=><option key={pp.id} value={pp.id}>{pp.name}</option>)}
+                          <select value={o.plan} onChange={e=>handlePlanChange(o._id,e.target.value)} style={{ padding:"4px 10px",borderRadius:20,border:"1px solid "+c.border,background:c.surfaceEl,color:planColor[o.plan]||c.textSub,fontSize:12,fontWeight:700,cursor:"pointer",outline:"none",fontFamily:"inherit" }}>
+                            {planDefs.filter(pp=>ASSIGNABLE_PLANS.includes(pp.id)).map(pp=><option key={pp.id} value={pp.id}>{pp.name}</option>)}
                           </select>
                         </td>
                         <td style={{ padding:"13px 14px" }}>
@@ -775,6 +867,7 @@ export function SuperAdminPage() {
                             <span style={{ width:6,height:6,borderRadius:"50%",background:statusDot[o.status]||c.textMute }}/>
                             {o.status||"active"}
                           </span>
+                          {isLocked(o) && o.blockedReason && <div title={o.blockedReason} style={{ fontSize:10,color:c.textMute,marginTop:4,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{o.blockedReason}</div>}
                         </td>
                         <td style={{ padding:"13px 14px" }}>
                           <div style={{ fontSize:13,fontWeight:500,color:c.text }}>{o.ownerName||"—"}</div>
@@ -795,10 +888,10 @@ export function SuperAdminPage() {
                             <button onClick={()=>{setEditOrg(o);setEditForm({name:o.name,slug:o.slug,ownerEmail:o.ownerEmail,ownerName:o.ownerName||"",ownerPhone:o.ownerPhone||"",adminNotes:o.adminNotes||"",logoUrl:o.logoUrl||"",address:o.address||"",website:o.website||"",taxId:o.taxId||"",maxUsers:o.maxUsers||"",maxLocations:o.maxLocations||"",bookingRules:{idRequired:o.bookingRules?.idRequired??false,photoRequired:o.bookingRules?.photoRequired??false,approvalRequired:o.bookingRules?.approvalRequired??true,walkInEnabled:o.bookingRules?.walkInEnabled??true}});}} style={{ padding:"5px 10px",borderRadius:6,border:"1px solid "+c.border,background:"transparent",color:c.textSub,fontSize:12,fontWeight:500,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontFamily:"inherit" }}>
                               <IcoEdit/>Edit
                             </button>
-                            <button onClick={()=>setBlockModal(o)} style={{ padding:"5px 10px",borderRadius:6,border:"1px solid "+(o.status==="blocked"?c.accentDim:c.border),background:o.status==="blocked"?c.accentBg:"transparent",color:o.status==="blocked"?c.accent:c.danger,fontSize:12,fontWeight:500,cursor:"pointer",fontFamily:"inherit" }}>
-                              {o.status==="blocked"?"Unblock":"Block"}
+                            <button onClick={()=>setBlockModal(o)} style={{ padding:"5px 10px",borderRadius:6,border:"1px solid "+(isLocked(o)?c.accentDim:c.border),background:isLocked(o)?c.accentBg:"transparent",color:isLocked(o)?c.accent:c.danger,fontSize:12,fontWeight:500,cursor:"pointer",fontFamily:"inherit" }}>
+                              {isLocked(o)?"Unblock":"Block"}
                             </button>
-                            <button onClick={()=>setDeleteConfirm(o)} style={{ padding:"5px 8px",borderRadius:6,border:"1px solid "+c.border,background:"transparent",color:c.textMute,cursor:"pointer",display:"flex",alignItems:"center" }}>
+                            <button disabled={o.status!=="blocked"} title={o.status==="blocked"?"Delete organisation":"Block the organisation before deleting it"} onClick={()=>setDeleteConfirm(o)} style={{ padding:"5px 8px",borderRadius:6,border:"1px solid "+c.border,background:"transparent",color:c.textMute,cursor:o.status==="blocked"?"pointer":"not-allowed",opacity:o.status==="blocked"?1:0.4,display:"flex",alignItems:"center" }}>
                               <IcoTrash/>
                             </button>
                           </div>
@@ -923,7 +1016,7 @@ export function SuperAdminPage() {
                   {orgs===undefined
                     ? <tr><td colSpan={FEATURES.length+2} style={{ padding:32,textAlign:"center",color:c.textMute }}>Loading...</td></tr>
                     : orgs.map((o:any) => (
-                      <FeatureRow key={o._id} org={o} c={c} onSave={async f => { await updateFeatures({orgId:o._id,features:f,...actor}); }}/>
+                      <FeatureRow key={o._id} org={o} c={c} onSave={async f => { try { await updateFeatures({orgId:o._id,features:f,...actor}); } catch (err) { notify("error", errMsg(err)); throw err; } }}/>
                     ))
                   }
                 </tbody>
@@ -970,7 +1063,7 @@ export function SuperAdminPage() {
         )}
 
         {/* SETTINGS */}
-        {tab==="settings" && <SettingsPanel user={user} c={c} />}
+        {tab==="settings" && <SettingsPanel user={user} c={c} notify={notify} />}
 
         <div style={{ textAlign:"center",padding:"12px 36px",fontSize:"12px",fontWeight:600,color:"#3fb950",letterSpacing:"0.04em",opacity:0.85 }}>© {new Date().getFullYear()} Porta · Powered by Lider Technologies LTD</div>
       </main>
@@ -981,13 +1074,13 @@ export function SuperAdminPage() {
           <div className="sa-modal-grid" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
             <div style={{ gridColumn:"1/-1" }}><Field label="Organisation logo" c={c}><LogoUploader current={form.logoUrl} onUpload={url=>setForm(f=>({...f,logoUrl:url}))} c={c}/></Field></div>
             <Field label="Organisation name" required c={c}><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Acme Corp" style={inp(c)}/></Field>
-            <Field label="URL handle" required c={c}><input value={form.slug} onChange={e=>setForm(f=>({...f,slug:e.target.value.toLowerCase().replace(/\s+/g,"-")}))} placeholder="acme-corp" style={inp(c)}/></Field>
+            <Field label="URL handle" required c={c}><input value={form.slug} onChange={e=>setForm(f=>({...f,slug:slugLive(e.target.value)}))} placeholder="acme-corp" style={inp(c)}/></Field>
             <Field label="Contact email" required c={c}><input value={form.ownerEmail} onChange={e=>setForm(f=>({...f,ownerEmail:e.target.value}))} placeholder="owner@acme.com" style={inp(c)}/></Field>
             <Field label="Contact name" c={c}><input value={form.ownerName} onChange={e=>setForm(f=>({...f,ownerName:e.target.value}))} placeholder="Jane Smith" style={inp(c)}/></Field>
             <Field label="Contact phone" c={c}><input value={form.ownerPhone} onChange={e=>setForm(f=>({...f,ownerPhone:e.target.value}))} placeholder="+1 555 000 0000" style={inp(c)}/></Field>
             <Field label="Website" c={c}><input value={form.website} onChange={e=>setForm(f=>({...f,website:e.target.value}))} placeholder="https://acme.com" style={inp(c)}/></Field>
             <Field label="Address" c={c}><input value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} placeholder="123 Main St" style={inp(c)}/></Field>
-            <Field label="Plan" c={c}><select value={form.plan} onChange={e=>setForm(f=>({...f,plan:e.target.value as Plan}))} style={{ ...inp(c),cursor:"pointer" }}>{planDefs.map(pp=><option key={pp.id} value={pp.id}>{pp.name}</option>)}</select></Field>
+            <Field label="Plan" c={c}><select value={form.plan} onChange={e=>setForm(f=>({...f,plan:e.target.value as Plan}))} style={{ ...inp(c),cursor:"pointer" }}>{planDefs.filter(pp=>ASSIGNABLE_PLANS.includes(pp.id)).map(pp=><option key={pp.id} value={pp.id}>{pp.name}</option>)}</select></Field>
             <Field label="Max users" c={c}><input value={form.maxUsers} onChange={e=>setForm(f=>({...f,maxUsers:e.target.value}))} placeholder="50" style={inp(c)}/></Field>
             <Field label="Max locations" c={c}><input value={form.maxLocations} onChange={e=>setForm(f=>({...f,maxLocations:e.target.value}))} placeholder="5" style={inp(c)}/></Field>
             <div style={{ gridColumn:"1/-1" }}>
@@ -1002,7 +1095,7 @@ export function SuperAdminPage() {
             </div>
             <div style={{ gridColumn:"1/-1" }}>
               <div style={{ background:c.surfaceEl,border:"1px solid "+c.border,borderRadius:8,padding:"10px 14px",fontSize:12,color:c.textSub }}>
-                Account starts on a 14-day trial automatically.
+                Account starts on a {trialDays}-day trial automatically (set under Settings).
               </div>
             </div>
           </div>
@@ -1021,7 +1114,7 @@ export function SuperAdminPage() {
           <div className="sa-modal-grid" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 20px" }}>
             <div style={{ gridColumn:"1/-1" }}><Field label="Logo" c={c}><LogoUploader current={editForm.logoUrl} onUpload={url=>setEditForm((f:any)=>({...f,logoUrl:url}))} c={c}/></Field></div>
             <Field label="Organisation name" required c={c}><input value={editForm.name} onChange={e=>setEditForm((f:any)=>({...f,name:e.target.value}))} style={inp(c)}/></Field>
-            <Field label="URL Handle" c={c}><input value={editForm.slug} onChange={e=>setEditForm((f:any)=>({...f,slug:e.target.value}))} style={inp(c)}/></Field>
+            <Field label="URL Handle" c={c}><input value={editForm.slug} onChange={e=>setEditForm((f:any)=>({...f,slug:slugLive(e.target.value)}))} style={inp(c)}/></Field>
             <Field label="Contact email" c={c}><input value={editForm.ownerEmail} onChange={e=>setEditForm((f:any)=>({...f,ownerEmail:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Contact name" c={c}><input value={editForm.ownerName} onChange={e=>setEditForm((f:any)=>({...f,ownerName:e.target.value}))} style={inp(c)}/></Field>
             <Field label="Contact phone" c={c}><input value={editForm.ownerPhone} onChange={e=>setEditForm((f:any)=>({...f,ownerPhone:e.target.value}))} style={inp(c)}/></Field>
@@ -1082,7 +1175,7 @@ export function SuperAdminPage() {
           </div>
           <ModalFooter>
             {planEditIdx<planDefs.length && (
-              <button onClick={()=>{setPlanDefs(d=>d.filter((_,i)=>i!==planEditIdx));setPlanEditIdx(null);setPlanEditVal(null);}} style={{ marginRight:"auto",padding:"9px 14px",borderRadius:8,border:"none",background:c.dangerBg,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>
+              <button onClick={()=>handleDeletePlan(planEditIdx)} style={{ marginRight:"auto",padding:"9px 14px",borderRadius:8,border:"none",background:c.dangerBg,color:c.danger,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit" }}>
                 Delete plan
               </button>
             )}
@@ -1094,16 +1187,21 @@ export function SuperAdminPage() {
 
       {/* ── BLOCK MODAL ── */}
       {blockModal && (
-        <Modal title={blockModal.status==="blocked"?"Unblock organisation":"Block organisation"} onClose={()=>{setBlockModal(null);setBlockReason("");}} c={c}>
+        <Modal title={isLocked(blockModal)?"Unblock organisation":"Block organisation"} onClose={()=>{setBlockModal(null);setBlockReason("");}} c={c}>
           <div style={{ fontSize:15,fontWeight:700,marginBottom:14,color:c.text }}>{blockModal.name}</div>
-          {blockModal.status!=="blocked"
-            ? <Field label="Reason (optional)" c={c}><textarea value={blockReason} onChange={e=>setBlockReason(e.target.value)} placeholder="e.g. Payment failed..." style={{ ...inp(c),minHeight:80,resize:"vertical" }}/></Field>
+          {!isLocked(blockModal)
+            ? <>
+                <div style={{ background:c.dangerBg,border:"1px solid rgba(248,81,73,0.25)",borderRadius:8,padding:"10px 14px",fontSize:12,color:c.danger,marginBottom:14 }}>
+                  Everyone in this organisation, including its admins and staff, loses access straight away. Their screens will load empty. The public booking page is hidden too.
+                </div>
+                <Field label="Reason (optional)" c={c}><textarea value={blockReason} onChange={e=>setBlockReason(e.target.value)} placeholder="e.g. Payment failed..." style={{ ...inp(c),minHeight:80,resize:"vertical" }}/></Field>
+              </>
             : <p style={{ fontSize:13,color:c.textSub }}>This will restore full access for all users in this organisation.</p>
           }
           <ModalFooter>
             <SecBtn onClick={()=>{setBlockModal(null);setBlockReason("");}} c={c}>Cancel</SecBtn>
-            <PriBtn onClick={handleBlockToggle} disabled={submitting} c={c} danger={blockModal.status!=="blocked"}>
-              {submitting?"...":(blockModal.status==="blocked"?"Unblock":"Block organisation")}
+            <PriBtn onClick={handleBlockToggle} disabled={submitting} c={c} danger={!isLocked(blockModal)}>
+              {submitting?"...":(isLocked(blockModal)?"Unblock":"Block organisation")}
             </PriBtn>
           </ModalFooter>
         </Modal>
@@ -1114,7 +1212,7 @@ export function SuperAdminPage() {
         <Modal title="Delete organisation" onClose={()=>setDeleteConfirm(null)} c={c}>
           <div style={{ fontSize:15,fontWeight:700,marginBottom:12,color:c.text }}>{deleteConfirm.name}</div>
           <div style={{ background:c.dangerBg,border:"1px solid rgba(239,68,68,0.25)",borderRadius:8,padding:"12px 14px",fontSize:13,color:c.danger }}>
-            Permanent and cannot be undone. All data for this organisation will be deleted forever.
+            Permanent and cannot be undone. The organisation record is deleted. Its staff, visits and rooms are not removed and stay orphaned in the database.
           </div>
           <ModalFooter>
             <SecBtn onClick={()=>setDeleteConfirm(null)} c={c}>Cancel</SecBtn>

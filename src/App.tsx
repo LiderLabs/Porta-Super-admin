@@ -1,4 +1,4 @@
-﻿import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import React, { useState } from "react";
 import { useUser, useClerk, useSignIn, SignOutButton } from "@clerk/clerk-react";
 import { SuperAdminPage } from "./features/superadmin/pages/SuperAdminPage";
@@ -146,7 +146,7 @@ function Guard({ children }: { children: React.ReactNode }) {
   const role = (user.publicMetadata as any)?.role;
   if (role !== "superadmin") return (
     <div style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100vh",background:"#080a0f",gap:"16px",fontFamily:"DM Sans,sans-serif" }}>
-      <div style={{ fontSize:"48px" }}>ðŸš«</div>
+      <div style={{ fontSize:"48px" }}>🚫</div>
       <div style={{ fontSize:"20px",fontWeight:700,color:"#e6edf3" }}>Access Denied</div>
       <div style={{ fontSize:"14px",color:"#8b949e" }}>This area is restricted to Porta superadmins only.</div>
       <div style={{ fontSize:"12px",color:"#30363d",marginTop:"8px" }}>Signed in as: {user.primaryEmailAddress?.emailAddress}</div>
@@ -163,7 +163,7 @@ function Guard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// â”€â”€â”€ Router â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Router ───────────────────────────────────────────────────────────────────
 const router = createBrowserRouter([
   { path: "/",  element: <Guard><SuperAdminPage /></Guard> },
   { path: "*",  element: <Navigate to="/" /> },
